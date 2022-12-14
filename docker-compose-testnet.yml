@@ -1,0 +1,217 @@
+version: "3.9"
+
+x-credentials: &postgres-config
+  POSTGRES_HOSTNAME: database
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+  POSTGRES_DB: postgres
+  POSTGRES_MIGRATION_FOLDER: /usr/local/bin/migrations/
+
+services:
+  rollups_dispatcher:
+    image: cartesi/rollups-dispatcher:0.8.1
+    command:
+      [
+        "--rd-dapp-contract-address-file",
+        "/deployments/${NETWORK:?undefined NETWORK}/${DAPP_NAME:?undefined DAPP_NAME}.json",
+        "--rd-initial-epoch",
+        "0",
+        "--sc-grpc-endpoint",
+        "http://state_server:50051",
+        "--sc-default-confirmations",
+        "${BLOCK_CONFIRMATIONS:?undefined BLOCK_CONFIRMATIONS}",
+        "--tx-provider-http-endpoint",
+        "${RPC_URL:?undefined RPC_URL}",
+        "--tx-mnemonic",
+        "${MNEMONIC:?undefined MNEMONIC}",
+        "--tx-chain-id",
+        "${CHAIN_ID:?undefined CHAIN_ID}",
+        "--tx-chain-is-legacy",
+        "${TX_LEGACY:-false}",
+        "--tx-default-confirmations",
+        "${BLOCK_CONFIRMATIONS_TX:?undefined BLOCK_CONFIRMATIONS_TX}",
+        "--redis-endpoint",
+        "redis://redis:6379",
+      ]
+    restart: always
+    depends_on:
+      state_server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      RUST_LOG: info
+    volumes:
+      - blockchain-data:/opt/cartesi/share/blockchain:ro
+      - ./deployments:/deployments
+
+  state_server:
+    image: cartesi/rollups-state-server:0.8.1
+    command:
+      [
+        "--sf-genesis-block",
+        "0x1",
+        "--sf-safety-margin",
+        "20",
+        "--bh-http-endpoint",
+        "${RPC_URL:?undefined RPC_URL}",
+        "--bh-ws-endpoint",
+        "${WSS_URL:?undefined WSS_URL}",
+        "--bh-block-timeout",
+        "120",
+      ]
+    restart: always
+    healthcheck:
+      test: ["CMD", "grpc-health-probe", "-addr=:50051"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - blockchain-data:/opt/cartesi/share/blockchain:ro
+    environment:
+      RUST_LOG: info
+
+  server_manager_broker_proxy:
+    image: cartesi/rollups-server-manager-broker-proxy:0.8.1
+    command:
+      [
+        "--chain-id",
+        "${CHAIN_ID:?undefined CHAIN_ID}",
+        "--dapp-contract-address-file",
+        "/deployments/${NETWORK:?undefined NETWORK}/${DAPP_NAME:?undefined DAPP_NAME}.json",
+        "--redis-endpoint",
+        "redis://redis:6379",
+        "--server-manager-endpoint",
+        "http://server_manager:5001",
+        "--session-id",
+        "default_rollups_id",
+      ]
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      redis:
+        condition: service_healthy
+      server_manager:
+        condition: service_healthy
+    volumes:
+      - ./deployments:/deployments
+    environment:
+      RUST_LOG: info
+
+  server_manager:
+    restart: always
+    healthcheck:
+      test: ["CMD", "grpc-health-probe", "-addr=:5001"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - machine:/opt/cartesi/share/dapp-bin
+    environment:
+      - SERVER_MANAGER_LOG_LEVEL=warning
+      - REMOTE_CARTESI_MACHINE_LOG_LEVEL=info
+
+  rollups_inspect_server:
+    image: cartesi/rollups-inspect-server:0.8.1
+    command:
+      [
+        "--inspect-server-address",
+        "0.0.0.0:5005",
+        "--server-manager-address",
+        "server_manager:5001",
+        "--session-id",
+        "default_rollups_id",
+      ]
+    restart: always
+    ports:
+      - "5005:5005"
+    depends_on:
+      server_manager:
+        condition: service_healthy
+    environment:
+      RUST_LOG: info
+
+  rollups_indexer:
+    image: cartesi/rollups-indexer:0.8.1
+    command:
+      [
+        "--dapp-contract-address-file",
+        "/deployments/${NETWORK:?undefined NETWORK}/${DAPP_NAME:?undefined DAPP_NAME}.json",
+        "--session-id",
+        "default_rollups_id",
+        "--initial-epoch",
+        "0",
+        "--interval",
+        "10",
+        "--confirmations",
+        "${BLOCK_CONFIRMATIONS:?undefined BLOCK_CONFIRMATIONS}",
+        "--state-server-endpoint",
+        "http://state_server:50051",
+        "--mm-endpoint",
+        "http://server_manager:5001",
+      ]
+    restart: always
+    depends_on:
+      state_server:
+        condition: service_healthy
+      server_manager:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    environment:
+      <<: *postgres-config
+      RUST_LOG: info
+    volumes:
+      - blockchain-data:/opt/cartesi/share/blockchain
+      - ./deployments:/deployments
+
+  query_server:
+    image: cartesi/query-server:0.8.1
+    ports:
+      - "4000:4000"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      RUST_LOG: info
+      GRAPHQL_HOST: "0.0.0.0"
+      GRAPHQL_PORT: "4000"
+      <<: *postgres-config
+
+  database:
+    image: postgres:13-alpine
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - database-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - 6379:6379
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis-data:/data
+
+volumes:
+  blockchain-data: {}
+  machine: {}
+  database-data: {}
+  redis-data: {}
