@@ -95,9 +95,11 @@ static bool process_deposit(rollup_bytes input_payload) {
                         input_payload.data + 2 * FIELD_SIZE +
                         ADDRESS_PADDING_SIZE,
                         CARTESI_ROLLUP_ADDRESS_SIZE) != 0) {
-        send_text_report(std::string("Invalid header on input 0x" +
-                                     hex(input_payload.data,
-                                         input_payload.length)));
+        std::stringstream ss;
+        ss << OP_INVALID_DEPOSIT <<
+            " - Invalid header on input 0 " <<
+            hex(input_payload.data, input_payload.length);
+        send_text_report(ss.str());
         return false;
     }
 
@@ -116,7 +118,8 @@ static bool process_deposit(rollup_bytes input_payload) {
     dapp_balance += amount;
 
     std::stringstream ss;
-    ss << "Amount deposited: CTSI " << std::dec << amount;
+    ss << OP_DEPOSIT_PROCESSED << " - Amount deposited: CTSI " << std::dec
+        << amount;
     send_text_report(ss.str());
     return true;
 }
@@ -180,7 +183,7 @@ static void issue_voucher() {
     rollup_ioctl(rollup_fd, IOCTL_ROLLUP_WRITE_VOUCHER, &voucher);
 
     std::stringstream ss;
-    ss << "Voucher generated for withdrawal of CTSI " << std::dec
+    ss << OP_VOUCHER_ISSUED << " - Voucher generated for withdrawal of CTSI " << std::dec
        << dapp_balance;
     send_text_report(ss.str());
 
@@ -215,7 +218,10 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
             issue_voucher();
         else {
             accept = false;
-            send_text_report("Withdrawal request refused due to lack of funds");
+            std::stringstream ss;
+            ss << OP_NO_FUNDS
+                << " - Withdrawal request refused due to lack of funds";
+            send_text_report(ss.str());
         }
     } else {
         accept = false;
@@ -224,7 +230,7 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
             request.payload.length
         };
         std::stringstream ss;
-        ss <<"Invalid input: " << data;
+        ss << OP_INVALID_INPUT << " - " << data;
         send_text_report(ss.str());
     }
 
