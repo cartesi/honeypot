@@ -1,2 +1,5 @@
 deployments
+dist
+generated-src
 honeypot
+node_modules
