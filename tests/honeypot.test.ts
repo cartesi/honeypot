@@ -81,4 +81,15 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         const reportPayload: string = hex2str(reports[0].payload);
         expect(reportPayload.startsWith(OP.NO_FUNDS));
     });
+
+    it("Input from wrong msg_sender shoud be rejected", async () => {
+        let receipt: InputReceipt = await cast.sendInput(
+            ALICE_INDEX,
+            "Input from wrong msg_sender"
+        );
+        const reports = await graphql.getReports(receipt);
+        expect(reports.length).to.eq(1);
+        const reportPayload: string = hex2str(reports[0].payload);
+        expect(reportPayload.startsWith(OP.INVALID_INPUT));
+    });
 });
