@@ -9,7 +9,11 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 import { ChildProcess, spawn, SpawnOptions } from "child_process";
+import * as ethers from "ethers";
 import { request, RequestOptions } from "http";
+
+export const INPUT_ADDED_EVENT_HASH: string =
+    "0xa15a0da5519c084484141aaa73e525cee96062f5decc97e070f0c4da27738bc7";
 
 export enum ErrorCodes {
     SESSION_ID_NOT_FOUND = 3,
@@ -106,7 +110,21 @@ export interface TestOptions {
     serverManagerAddress: string;
     logLevel: LogLevel;
     pollingLimit: number;
+    dappAddress: string;
+    erc20Address: string;
+    castRpcEndpoint: string;
+    graphQLServer: string;
 }
+
+let testOptions: TestOptions = {
+    logLevel: LogLevel.DEFAULT,
+    pollingLimit: 60,
+    serverManagerAddress: "",
+    dappAddress: "0xf8c694fd58360de278d5ff2276b7130bfdc0192a",
+    erc20Address: "0x610178da211fef7d417bc0e6fed39f05609ad788",
+    castRpcEndpoint: "localhost",
+    graphQLServer: "http://localhost:4000/graphql",
+};
 
 const captureStringArg = (argv: string[], argName: string): string => {
     let index = argv.indexOf(argName);
@@ -136,12 +154,8 @@ const captureNumberArg = (argv: string[], argName: string): number => {
     return -1;
 };
 
-export const parseArgs = (argv: string[]): TestOptions => {
-    let options: TestOptions = {
-        logLevel: LogLevel.DEFAULT,
-        pollingLimit: 60,
-        serverManagerAddress: "",
-    };
+export const setTestOptions = (argv: string[]): TestOptions => {
+    let options = testOptions;
 
     let serverManagerAddress = captureStringArg(argv, "--serverManagerAddress");
     if (serverManagerAddress) {
@@ -153,11 +167,36 @@ export const parseArgs = (argv: string[]): TestOptions => {
         options.pollingLimit = limit;
     }
 
+    let dappAddress = captureStringArg(argv, "--dappAddress");
+    if (dappAddress) {
+        options.dappAddress = dappAddress;
+    }
+
+    let erc20Address = captureStringArg(argv, "--erc20Address");
+    if (erc20Address) {
+        options.erc20Address = erc20Address;
+    }
+
+    let castRpcEndpoint = captureStringArg(argv, "--castRpcEndpoint");
+    if (castRpcEndpoint) {
+        options.castRpcEndpoint = castRpcEndpoint;
+    }
+
+    let graphQLServer = captureStringArg(argv, "--graphQLServer");
+    if (graphQLServer) {
+        options.graphQLServer = graphQLServer;
+    }
+
     if (argv.includes("--verbose")) {
         options.logLevel = LogLevel.VERBOSE;
     }
 
-    return options;
+    testOptions = options;
+    return testOptions;
+};
+
+export const getTestOptions = (): TestOptions => {
+    return testOptions;
 };
 
 export const sendRequest = async (
@@ -182,4 +221,13 @@ export const sendRequest = async (
         }
         req.end();
     });
+};
+
+export const hex2str = (hex: string) => {
+    try {
+        return ethers.utils.toUtf8String(hex);
+    } catch (e) {
+        // cannot decode hex payload as a UTF-8 string
+        return hex;
+    }
 };
