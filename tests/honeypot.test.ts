@@ -10,12 +10,13 @@
 // specific language governing permissions and limitations under the License.
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import * as ethers from "ethers";
 
 import * as cast from "./cast";
 
 import * as graphql from "./rollups/graphql";
 
-import { PollingServerManagerClient } from "./rollups/rollups";
+import { inspect, PollingServerManagerClient } from "./rollups/rollups";
 
 import {
     CommandOutput,
@@ -48,7 +49,7 @@ enum OP {
 let serverManager: PollingServerManagerClient;
 
 const testConfig = setTestOptions(process.argv);
-logger.logLevel = LogLevel.VERBOSE;//testConfig.logLevel;
+logger.logLevel = testConfig.logLevel;
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -84,12 +85,62 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
 
     it("Input from wrong msg_sender shoud be rejected", async () => {
         let receipt: InputReceipt = await cast.sendInput(
-            ALICE_INDEX,
+            ALICE_ADDRESS,
             "Input from wrong msg_sender"
         );
         const reports = await graphql.getReports(receipt);
         expect(reports.length).to.eq(1);
         const reportPayload: string = hex2str(reports[0].payload);
         expect(reportPayload.startsWith(OP.INVALID_INPUT));
+    });
+
+    it("Valid input results in a voucher, which is executed", async () => {
+        const AMOUNT: ethers.BigNumber = ethers.BigNumber.from("1");
+
+        const initialBobBalance = await cast.getBalance(BOB_ADDRESS);
+        let dappBalance: ethers.BigNumber = ethers.BigNumber.from(
+            await inspect("any_payload_should_work")
+        );
+        let expectedDappBalance: ethers.BigNumber = dappBalance.add(AMOUNT);
+        logger.verbose("> Balances retrieved");
+
+        await cast.approveAllowance(ALICE_ADDRESS, AMOUNT);
+        logger.verbose("> Allowance approved");
+
+        let receipt: InputReceipt = await cast.erc20Deposit(
+            ALICE_ADDRESS,
+            AMOUNT
+        );
+        logger.verbose("> Deposit performed");
+        let reports = await graphql.getReports(receipt);
+        expect(reports.length).to.eq(1);
+        let reportPayload: string = hex2str(reports[0].payload);
+        expect(reportPayload.startsWith(OP.DEPOSIT_PROCESSED));
+        logger.verbose("> Report retrieved");
+
+        dappBalance = ethers.BigNumber.from(
+            await inspect("any_payload_should_work")
+        );
+        expect(dappBalance.eq(expectedDappBalance));
+        logger.verbose("> DApp balance matches expected value");
+
+        receipt = await cast.sendInput(BOB_ADDRESS, "Voucher should be issued");
+        reports = await graphql.getReports(receipt);
+        expect(reports.length).to.eq(1);
+        reportPayload = hex2str(reports[0].payload);
+        expect(reportPayload.startsWith(OP.VOUCHER_ISSUED));
+        logger.verbose("> Voucher issued");
+
+        let vouchers: graphql.PartialVoucher[] = await graphql.getVouchers(
+            receipt
+        );
+
+        expect(vouchers.length).to.eq(1);
+        logger.verbose("> Voucher retrieved");
+        logger.verbose(vouchers[0]);
+
+        //TODO Advance epoch
+        //TODO Execute voucher
+        //TODO Assert Bob's balance corresponds to the previous dappBalance
     });
 });

@@ -21,7 +21,17 @@ import { ProcessedInput } from "../dist/generated-src/proto/CartesiServerManager
 import { ServerManagerClient } from "../dist/generated-src/proto/CartesiServerManager/ServerManager";
 import path from "path";
 
-import { CommandOutput, ErrorCodes, logger, sendRequest, timer } from "../util";
+import {
+    CommandOutput,
+    ErrorCodes,
+    getTestOptions,
+    hex2str,
+    logger,
+    sendRequest,
+    timer,
+} from "../util";
+
+const CONFIG = getTestOptions();
 
 //gRPC
 export class PollingServerManagerClient {
@@ -264,4 +274,29 @@ const _hardhatEvmMine = async (): Promise<void> => {
     };
 
     await sendRequest(options, data);
+};
+
+export const inspect = async (query: string): Promise<string> => {
+    const url = path.join(CONFIG.inspectServer, query);
+    const response = await fetch(url);
+
+    logger.verbose(`HTTP status: ${response.status}`);
+    let payload: string = "";
+    if (response.status == 200) {
+        const result = await response.json();
+        logger.verbose(`Inspect status: ${JSON.stringify(result.status)}`);
+        logger.verbose(`Metadata: ${JSON.stringify(result.metadata)}`);
+        logger.verbose(`Reports:`);
+        for (let i in result.reports) {
+            payload = hex2str(result.reports[i].payload);
+            logger.verbose(`${i}: ${payload}`);
+        }
+        if (result.exception_payload) {
+            payload = result.exception_payload;
+            logger.verbose(`Exception payload: ${hex2str(payload)}`);
+        }
+    } else {
+        logger.verbose(JSON.stringify(await response.text()));
+    }
+    return payload;
 };

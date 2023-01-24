@@ -89,6 +89,29 @@ export const getBalance = async (
     return ethers.BigNumber.from(balanceStr.replace("\n", ""));
 };
 
+const castSend = async (
+    signerAddress: string,
+    functionArgs: string[]
+): Promise<CommandOutput> => {
+    const cmd = "cast";
+    const args = [
+        "send",
+        // functionArgs are inserted here
+        "--rpc-url",
+        CONFIG.castRpcEndpoint,
+        "--from",
+        signerAddress,
+        "--json",
+    ];
+
+    const offset = 1;
+    for (let i = 0; i < functionArgs.length; i++) {
+        args.splice(offset + i, 0, functionArgs[i]);
+    }
+
+    return await spawnAsync(cmd, args);
+};
+
 /*
  * Send a text input from a given signerAddress
  */
@@ -100,20 +123,50 @@ export const sendInput = async (
         ethers.utils.toUtf8Bytes(payload)
     );
 
-    //TODO Generalize cast calls in a function
-    const cmd = "cast";
-    const args = [
-        "send",
+    const functionArgs: string[] = [
         CONFIG.dappAddress,
         "addInput(bytes)",
         hexPayload,
-        "--rpc-url",
-        CONFIG.castRpcEndpoint,
-        "--from",
-        signerAddress,
-        "--json",
     ];
-    const tx = await spawnAsync(cmd, args);
 
+    const tx = await castSend(signerAddress, functionArgs);
+    return filterInputReceipt(JSON.parse(tx.stdout));
+};
+
+/*
+ * Approve allowance for an ERC20 deposit
+ */
+export const approveAllowance = async (
+    signerAddress: string,
+    amount: ethers.BigNumber
+): Promise<void> => {
+    const functionArgs: string[] = [
+        CONFIG.erc20Address,
+        "approve(address,uint256)",
+        CONFIG.dappAddress,
+        amount.toString(),
+        "0x00",
+    ];
+
+    const tx = await castSend(signerAddress, functionArgs);
+    return;
+};
+
+/*
+ * Deposit ERC20 tokens
+ */
+export const erc20Deposit = async (
+    signerAddress: string,
+    amount: ethers.BigNumber
+): Promise<InputReceipt> => {
+    const functionArgs: string[] = [
+        CONFIG.dappAddress,
+        "erc20Deposit(address,uint256,bytes)",
+        CONFIG.erc20Address,
+        amount.toString(),
+        "0x00",
+    ];
+
+    const tx = await castSend(signerAddress, functionArgs);
     return filterInputReceipt(JSON.parse(tx.stdout));
 };

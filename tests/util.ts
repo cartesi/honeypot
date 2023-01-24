@@ -114,6 +114,7 @@ export interface TestOptions {
     erc20Address: string;
     castRpcEndpoint: string;
     graphQLServer: string;
+    inspectServer: string;
 }
 
 let testOptions: TestOptions = {
@@ -124,6 +125,7 @@ let testOptions: TestOptions = {
     erc20Address: "0x610178da211fef7d417bc0e6fed39f05609ad788",
     castRpcEndpoint: "localhost",
     graphQLServer: "http://localhost:4000/graphql",
+    inspectServer: "http://localhost:5005/inspect",
 };
 
 const captureStringArg = (argv: string[], argName: string): string => {
@@ -185,6 +187,11 @@ export const setTestOptions = (argv: string[]): TestOptions => {
     let graphQLServer = captureStringArg(argv, "--graphQLServer");
     if (graphQLServer) {
         options.graphQLServer = graphQLServer;
+    }
+
+    let inspectServer = captureStringArg(argv, "--inspectServer");
+    if (inspectServer) {
+        options.inspectServer = inspectServer;
     }
 
     if (argv.includes("--verbose")) {
