@@ -10,7 +10,7 @@
         "grpc:codegen": "proto-loader-gen-types --grpcLib @grpc/grpc-js --outDir dist/generated-src/proto grpc-interfaces/server-manager.proto",
         "prebuild": "run-p grpc:codegen graphql:codegen",
         "build": "tsc",
-        "mocha": "wrap () { mocha -r ts-node/register honeypot.test.ts -t 3m -b --address 0.0.0.0:5001 --environment prod $* ; }; wrap",
+        "mocha": "wrap () { mocha -r ts-node/register honeypot.test.ts -t 3m -b --address 0.0.0.0:5001 $* ; }; wrap",
         "test": "wrap () { yarn mocha $* ;}; wrap",
         "prettier": "prettier -w \"**/*.ts\""
     },

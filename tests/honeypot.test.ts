@@ -11,20 +11,18 @@
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
-import {
-    logger,
-    isQueryServerReady,
-    PollingServerManagerClient,
-    parseArgs,
-} from "./util";
+import { PollingServerManagerClient } from "./rollups/rollups";
+
+import { CommandOutput, logger, LogLevel, parseArgs } from "./util";
 
 const PROJECT_NAME = require("project-name");
 
+// TODO Move SERVER_MANAGER_PROTO to rollups/rollups.ts
 const SERVER_MANAGER_PROTO = "./grpc-interfaces/server-manager.proto";
 
 let serverManager: PollingServerManagerClient;
 
-const { logLevel, pollingTimeout, address, environment } = parseArgs(
+const { logLevel, pollingLimit, serverManagerAddress } = parseArgs(
     process.argv
 );
 logger.logLevel = logLevel;
@@ -35,12 +33,12 @@ const expect = chai.expect;
 describe("Integration Tests for " + PROJECT_NAME(), () => {
     before(async function () {
         serverManager = new PollingServerManagerClient(
-            address,
+            serverManagerAddress,
             SERVER_MANAGER_PROTO
         );
         logger.log("    Waiting for server manager...");
         expect(
-            await serverManager.isReady(pollingTimeout),
+            await serverManager.isReady(pollingLimit),
             "Failed to connect to Server Manager"
         ).to.be.true;
         logger.log("    Server manager ready!");
