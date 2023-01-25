@@ -71,15 +71,13 @@ static void send_text_report(std::string message) {
 }
 
 /*
- * Expected format for ERC-20 deposits inputs:
+ * Expected format for ETH deposits:
  *
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                   ERC-20 TRANSFER HEADER                      |
+ * |                   ETHER TRANSFER HEADER                       |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                         DEPOSITOR                             |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |            ZERO-PADDED ERC-20 CONTRACT ADDRESS                |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                           AMOUNT                              |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -87,23 +85,19 @@ static void send_text_report(std::string message) {
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
 static bool process_deposit(rollup_bytes input_payload) {
-    // Validate input header and ERC-20 contract address
-    if (std::memcmp(ERC20_TRANSFER_HEADER.data(),
+    // Validate input header
+    if (std::memcmp(ETHER_TRANSFER_HEADER.data(),
                     input_payload.data,
-                    FIELD_SIZE) != 0 ||
-            std::memcmp(CTSI_CONTRACT_ADDRESS.data(),
-                        input_payload.data + 2 * FIELD_SIZE +
-                        ADDRESS_PADDING_SIZE,
-                        CARTESI_ROLLUP_ADDRESS_SIZE) != 0) {
+                    FIELD_SIZE)) {
         std::stringstream ss;
         ss << OP_INVALID_DEPOSIT <<
-            " - Invalid header on input 0 " <<
-            hex(input_payload.data, input_payload.length);
+           " - Invalid header on input 0 " <<
+           hex(input_payload.data, input_payload.length);
         send_text_report(ss.str());
         return false;
     }
 
-    size_t pos = 3*FIELD_SIZE;
+    size_t pos = 2 * FIELD_SIZE;
     size_t count = FIELD_SIZE;
     std::vector<uint8_t> amount_bytes;
 
@@ -118,40 +112,63 @@ static bool process_deposit(rollup_bytes input_payload) {
     dapp_balance += amount;
 
     std::stringstream ss;
-    ss << OP_DEPOSIT_PROCESSED << " - Amount deposited: CTSI " << std::dec
-        << amount;
+    ss << OP_DEPOSIT_PROCESSED << " - Amount deposited: ETH " << std::dec
+       << amount;
+
     send_text_report(ss.str());
     return true;
 }
 
 /*
- * Payload format of a Voucher for ERC-20 withdrawals:
+ * Payload format of a Voucher for a ETH withdrawal:
  *
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |FUNC.  |             ZERO-PADDED ACCOUNT ADDRESS               |
- * |SELEC. |                                                       |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |       |                        AMOUNT                         |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |       |
  * +-+-+-+-+
+ * |FUNC.  |
+ * |SELEC. |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |                  LOCATION OF THE CALLDATA                     |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |                   LENGTH OF THE CALLDATA                      |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |                 ZERO-PADDED ACCOUNT ADDRESS                   |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |                            AMOUNT                             |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ * `etherWithdrawal` signature [1]:
+ *
+ * ```
+ * function etherWithdrawal(bytes calldata _data) external returns (bool);
+ * ```
+ *
+ * [1] https://github.com/cartesi-corp/rollups/blob/v0.8.2/onchain/rollups/contracts/interfaces/IEtherPortal.sol#L27
  */
 static void issue_voucher() {
     rollup_voucher voucher{};
     std::vector<uint8_t> voucher_payload;
 
-    // ERC-20 contract address
     std::copy(
-        CTSI_CONTRACT_ADDRESS.begin(),
-        CTSI_CONTRACT_ADDRESS.end(),
+        rollup_address.begin(),
+        rollup_address.end(),
         voucher.address);
 
     // Transfer function selector
     voucher_payload.insert(
         voucher_payload.end(),
-        TRANSFER_FUNCTION_SELECTOR_BYTES.begin(),
-        TRANSFER_FUNCTION_SELECTOR_BYTES.end());
+        ETHER_WITHDRAWAL_FUNCTION_SELECTOR_BYTES.begin(),
+        ETHER_WITHDRAWAL_FUNCTION_SELECTOR_BYTES.begin() + 4);
+
+    // For enconding of dynamic type `bytes`, check:
+    // https://docs.soliditylang.org/en/v0.5.3/abi-spec.html
+    voucher_payload.insert(
+        voucher_payload.end(),
+        CALLDATA_OFFSET_BYTES.begin(),
+        CALLDATA_OFFSET_BYTES.end());
+    voucher_payload.insert(
+        voucher_payload.end(),
+        CALLDATA_LENGTH_BYTES.begin(),
+        CALLDATA_LENGTH_BYTES.end());
 
     // 12-byte long address padding
     voucher_payload.insert(voucher_payload.end(), ADDRESS_PADDING_SIZE, 0);
@@ -183,7 +200,7 @@ static void issue_voucher() {
     rollup_ioctl(rollup_fd, IOCTL_ROLLUP_WRITE_VOUCHER, &voucher);
 
     std::stringstream ss;
-    ss << OP_VOUCHER_ISSUED << " - Voucher generated for withdrawal of CTSI " << std::dec
+    ss << OP_VOUCHER_ISSUED << " - Voucher generated for withdrawal of ETH " << std::dec
        << dapp_balance;
     send_text_report(ss.str());
 
@@ -214,13 +231,13 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
     if (msg_sender == rollup_address)
         accept = process_deposit(request.payload);
     else if (msg_sender == WITHDRAWAL_ADDRESS) {
-        if (dapp_balance > 0)
+        if (dapp_balance > 0) {
             issue_voucher();
-        else {
+        } else {
             accept = false;
             std::stringstream ss;
             ss << OP_NO_FUNDS
-                << " - Withdrawal request refused due to lack of funds";
+               << " - Withdrawal request refused due to lack of funds";
             send_text_report(ss.str());
         }
     } else {
@@ -230,7 +247,7 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
             request.payload.length
         };
         std::stringstream ss;
-        ss << OP_INVALID_INPUT << " - " << data;
+        ss << OP_INVALID_INPUT << " - Payload: " << data;
         send_text_report(ss.str());
     }
 

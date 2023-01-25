@@ -69,20 +69,14 @@ const filterInputReceipt = (rawReceipt: CastOutput): InputReceipt => {
 };
 
 /*
- * Retrieve balance of a given address for a given ERC20 contract.
+ * Retrieve balance of a given address in wei.
  */
 export const getBalance = async (
     address: string
 ): Promise<ethers.BigNumber> => {
     const cmd = "cast";
-    const args = [
-        "call",
-        CONFIG.erc20Address,
-        "balanceOf(address)",
-        address,
-        "--rpc-url",
-        CONFIG.castRpcEndpoint,
-    ];
+    const args = ["balance", address, "--rpc-url", CONFIG.castRpcEndpoint];
+
     const io = await spawnAsync(cmd, args, {});
 
     let balanceStr: string = io.stdout.substring(0, io.stdout.length - 1);
@@ -168,5 +162,25 @@ export const erc20Deposit = async (
     ];
 
     const tx = await castSend(signerAddress, functionArgs);
+    return filterInputReceipt(JSON.parse(tx.stdout));
+};
+
+/*
+ * Deposit ETH
+ */
+export const ethDeposit = async (
+    accountIndex: string,
+    amount: ethers.BigNumber,
+    l2Data: string
+): Promise<InputReceipt> => {
+    const functionArgs: string[] = [
+        CONFIG.dappAddress,
+        "etherDeposit(bytes)",
+        ethers.utils.hexlify(ethers.utils.toUtf8Bytes(l2Data)),
+        "--value",
+        amount.toString(),
+    ];
+
+    const tx = await castSend(accountIndex, functionArgs);
     return filterInputReceipt(JSON.parse(tx.stdout));
 };

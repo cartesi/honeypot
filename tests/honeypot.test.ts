@@ -35,6 +35,7 @@ const PROJECT_NAME = require("project-name");
 const SERVER_MANAGER_PROTO = "./grpc-interfaces/server-manager.proto";
 
 //TODO Make addresses configurable
+const DAPP_ADDRESS = "0xf8c694fd58360de278d5ff2276b7130bfdc0192a";
 const ALICE_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const BOB_ADDRESS = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
 
@@ -95,7 +96,9 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
     });
 
     it("Valid input results in a voucher, which is executed", async () => {
-        const AMOUNT: ethers.BigNumber = ethers.BigNumber.from("1");
+        const AMOUNT: ethers.BigNumber = ethers.BigNumber.from(
+            "100000000000000000000"
+        );
 
         const initialBobBalance = await cast.getBalance(BOB_ADDRESS);
         let dappBalance: ethers.BigNumber = ethers.BigNumber.from(
@@ -103,15 +106,17 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         );
         let expectedDappBalance: ethers.BigNumber = dappBalance.add(AMOUNT);
         logger.verbose("> Balances retrieved");
+        logger.verbose("> Bob's   : " + initialBobBalance);
+        logger.verbose("> Pot size: " + dappBalance);
 
-        await cast.approveAllowance(ALICE_ADDRESS, AMOUNT);
-        logger.verbose("> Allowance approved");
-
-        let receipt: InputReceipt = await cast.erc20Deposit(
+        let receipt: InputReceipt = await cast.ethDeposit(
             ALICE_ADDRESS,
-            AMOUNT
+            AMOUNT,
+            "Deposit of ETH " + AMOUNT
         );
         logger.verbose("> Deposit performed");
+        logger.verbose("> Amount: " + AMOUNT);
+
         let reports = await graphql.getReports(receipt);
         expect(reports.length).to.eq(1);
         let reportPayload: string = hex2str(reports[0].payload);
@@ -123,6 +128,7 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         );
         expect(dappBalance.eq(expectedDappBalance));
         logger.verbose("> DApp balance matches expected value");
+        logger.verbose("> Pot size: " + dappBalance);
 
         receipt = await cast.sendInput(BOB_ADDRESS, "Voucher should be issued");
         reports = await graphql.getReports(receipt);

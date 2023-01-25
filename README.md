@@ -1,14 +1,19 @@
 # Honeypot DApp
 
-This is a [Honeypot](https://en.wikipedia.org/wiki/Honeypot_(computing))-like DApp whose pot is the balance kept by the actual DApp.
+The Honeypot DApp is a [honeypot](https://en.wikipedia.org/wiki/Honeypot_(computing))-like DApp whose pot is the balance in _ETHER_ kept by the actual DApp.
 
-The Honeypot DApp can receive deposits in CTSI from any source, which are kept in the DApp balance for further withdrawal by a pre-defined account address (`WITHDRAWAL_ADDRESS`).
+The Honeypot DApp can receive deposits from any source, which are kept in the DApp balance for further withdrawal by a pre-defined account address (`WITHDRAWAL_ADDRESS`).
 
-No other account is allowed to withdraw the funds, any input coming from an address other than the `WITHDRAWAL_ADDRESS` is discarded.
+No other account is allowed to withdraw the funds.
+Any input coming from an address other than the `WITHDRAWAL_ADDRESS` is discarded.
 
-**The DApp generate Reports for all operations and a Voucher when a request for withdrawal is accepted.**
+The DApp generates Reports for all operations.
+A Voucher for the withdrawal of the pot is generated only when a request for withdrawal is accepted.
 
-The DApp is written in C++ and relies on the [Cartesi Rollups Low-level API](https://github.com/cartesi/rollups-examples/tree/main/echo-low-level#low-level-api) to interact with Cartesi Rollups.
+The back-end of the DApp is written in C++ and relies on the [Cartesi Rollups Low-level API](https://github.com/cartesi/rollups-examples/tree/main/echo-low-level#low-level-api) to communicate with Cartesi Rollups.
+
+This document covers how to build, deploy and run the back-end of the DApp.
+Additionaly, an external tool is suggested to act as a front-end to send requests to the DApp back-end.
 
 > For a simpler example of a low-level DApp, refer to the [Echo Low-level DApp](https://github.com/cartesi/rollups-examples/tree/main/echo-low-level).
 
@@ -41,9 +46,9 @@ make config
 ```
 
 4. Once there, go to `Target packages -> Libraries -> Other` and select all Boost packages (`boost*`), just in case.
-5. Save and exit
-6. **Answer `no` to the question `Do you wish to build it now?`**
-7. Increase the file system size (managed by `BR2_TARGET_ROOTFS_EXT2_SIZE`) in the Buildroot configuration file (`cartesi-buildroot-config`)to fit the new libraries.
+5. Save and exit.
+6. **Answer `no` to the question `Do you wish to build it now?`**.
+7. Increase the file system size (managed by `BR2_TARGET_ROOTFS_EXT2_SIZE`) in the Buildroot configuration file (`cartesi-buildroot-config`) to fit the Boost libraries.
 
 ```shell
 sed -i 's/BR2_TARGET_ROOTFS_EXT2_SIZE=\"68M\"/BR2_TARGET_ROOTFS_EXT2_SIZE=\"100M\"/g' cartesi-buildroot-config
@@ -71,7 +76,7 @@ To build the DApp, run the following command:
 docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --load
 ```
 
-## Running
+## Running the application
 
 To start the DApp, execute the following command:
 
@@ -79,7 +84,7 @@ To start the DApp, execute the following command:
 docker compose up
 ```
 
-To bring the DApp down, run the following command:
+To bring the DApp down along with its volumes, run the following command:
 
 ```shell
 docker compose down -v
@@ -87,49 +92,95 @@ docker compose down -v
 
 ## Interacting with the application
 
-The [frontend-console](https://github.com/cartesi/rollups-examples/tree/main/frontend-console) application may be used to interact with the DApp.
-Ensure that the [application has already been built](https://github.com/cartesi/rollups-examples/tree/main/frontend-console/README.md#building) before using it.
+The DApp depends on external tools to act as its front-end to send input requests to the back-end.
+[Foundry's command-line tool for performing Ethereum RPC calls](https://book.getfoundry.sh/cast/), `cast` is going to be used for this purpose in this documentation.
 
-To perform any of the operations listed below, first open a separate terminal window and go to the `frontend-console` directory (`$FC_DIR`):
+In order to install the Foundry development toolchain, refer to their [installation guide](https://book.getfoundry.sh/getting-started/installation).
+
+## Gathering DApp data
+
+For all DApp operations, the DApp contract address is required.
+In order to gather that in a local deployment, first [start up the DApp](./#running-the-application).
+Then, execute the following command from the current directory to extract the address from its deployment data:
 
 ```shell
-cd $FC_DIR
+export DAPP_ADDRESS=$(cat deployments/localhost/dapp.json | jq -r '.address')
 ```
+
+> In a local development environment, `$DAPP_ADDRESS` should be `0xF8C694fd58360De278d5fF2276B7130Bfdc0192A`.
 
 ### Performing Deposits
 
 Any account can deposit funds into the pot.
-
-As an example, deposit some CTSI using the default user account as follows:
+In order to deposit some _ETHER_ via `cast`, proceed as follows:
 
 ```shell
-yarn start erc20 deposit --amount 99999999999999
+cast send $DAPP_ADDRESS \
+    "etherDeposit(bytes)" 0x00 \
+    --value $ETHER_AMOUNT \
+    --rpc-url localhost \
+    --from $SIGNER_ADDRESS
 ```
 
-> Any deposit will be logged as a `Report`.
+Where:
+
+- `$DAPP_ADDRESS` corresponds to the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
+- `0x00` is a dummy value passed as parameter `bytes`, which corresponds to additional (layer-2) data to be parsed by the DApp;
+It accepts any value, as long as properly ABI-encoded;
+- `$ETHER_AMOUNT` is the amount of ETHER in _wei_ to be deposited;
+-  `localhost` is the name of the local RPC Endpoint as defined at [`foundry.toml`](./foundry.toml);
+- `$SIGNER_ADDRESS` is the account address that will sign the transaction, thus performing the deposit into the DApp.
+
+Any deposit will be logged as a `Report` by the DApp.
+
+> For more information about `cast send`, simply type `cast send --help` or refer to [Foundry's documentation](https://book.getfoundry.sh/reference/cast/cast-send).
 
 ### Checking the pot balance
 
-To check the balance, simply send and inspect request to the DApp with any payload (`IGNORED`, in the example below):
+To check the balance in _wei_, simply send the following command:
 
 ```shell
-yarn start inspect --payload IGNORED
+cast balance $DAPP_ADDRESS \
+    --rpc-url localhost
 ```
+
+> The pot balance may also be checked by sending an inspect request with any payload to the DApp, which will respond with the balance in _wei_.
+
+### Sending inputs
+
+In order to send inputs to the DApp, do the following:
+
+```shell
+cast send $DAPP_ADDRESS \
+    "addInput(bytes)" $HEX_PAYLOAD \
+    --rpc-url localhost \
+    --from $SIGNER_ADDRESS
+```
+
+Where:
+
+- `$DAPP_ADDRESS` corresponds to the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
+- `$HEX_PAYLOAD` is an hex-encoded payload, which is mandatory, but will be ignored by the DApp;
+-  `localhost` is the name of the local RPC Endpoint as defined at [`foundry.toml`](./foundry.toml);
+- `$SIGNER_ADDRESS` is the account address that will sign the transaction, thus sending the input.
 
 ### Withdrawing the pot
 
 Only a predefined address can withdraw funds from the pot. Refer to [`honeypot.h`](./honeypot.h) to check the `WITHDRAWAL_ADDRESS` used for this DApp.
 
-
-In order to perform a withdrawal, send any input (`ANY`, in the example below) to the DApp using the predefined address (`0x70997970C51812dc3A010C7d01b50e0d17dc79C8` in the example below):
+In order to perform a withdrawal, just send any input (`Hello world`, in the example below) to the DApp using `WITHDRAWAL_ADDRESS`  as follows:
 
 ```shell
-yarn start input send --payload ANY --accountIndex 1
+cast send $DAPP_ADDRESS \
+    "addInput(bytes)" 0x48656c6c6f20776f726c64 \
+    --rpc-url localhost \
+    --from $WITHDRAWAL_ADDRESS
 ```
 
-As a result, a `Voucher` will be generated, which, when executed, will perform the transfer of all funds previously held by the DApp to `WITHDRAWAL_ADDRESS`.
+As a result, a `Voucher` will be generated, as long as the pot balance is greater than zero.
+The Voucher, when executed, will perform the transfer of all funds previously held by the DApp to `WITHDRAWAL_ADDRESS`.
 
-> Any other input will be rejected, with a `Report` being generated accordingly.
+Any input sent from a different address that is not a deposit will be rejected, with a `Report` being generated accordingly.
 
 ## Running the back-end in host mode
 

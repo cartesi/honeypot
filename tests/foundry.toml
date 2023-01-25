@@ -1,2 +1,1 @@
-[rpc_endpoints]
-localhost = "http://localhost:8545"
+foundry.toml
