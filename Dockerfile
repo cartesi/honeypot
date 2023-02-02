@@ -5,4 +5,6 @@ FROM cartesi/rootfs:devel as dapp-build
 WORKDIR /opt/cartesi/dapp
 COPY . .
 
-RUN make
+ARG ENV=localhost
+
+RUN make ENV=$ENV

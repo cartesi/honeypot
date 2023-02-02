@@ -28,6 +28,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 
 #include "honeypot.h"
+#include "config.h"
 
 static int rollup_fd;
 static std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE> rollup_address;

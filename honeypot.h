@@ -65,12 +65,4 @@ CALLDATA_LENGTH_BYTES = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 64
 };
-
-// Account address (Bob's) which is allowed to withdraw the DApp assests
-// TODO Make the withdrawal address configurable in build time
-const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
-WITHDRAWAL_ADDRESS = {
-    112, 153, 121, 112, 197, 24, 18, 220, 58, 1,
-    12, 125, 1, 181, 14, 13, 23, 220, 121, 200
-};
 #endif
