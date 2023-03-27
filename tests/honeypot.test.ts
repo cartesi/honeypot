@@ -69,38 +69,12 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         logger.log("    Server manager ready!");
     });
 
-    it("Valid input should be rejected due to lack of funds", async () => {
-        let dappBalance = await cast.getBalance(testConfig.dappAddress);
-        expect(dappBalance.eq(0));
-
-        let receipt: InputReceipt = await cast.sendInput(
-            BOB_ADDRESS,
-            "Lack of funds"
-        );
-        const reports = await graphql.getReports(receipt);
-        expect(reports.length).to.eq(1);
-
-        const reportPayload: string = hex2str(reports[0].payload);
-        expect(reportPayload.startsWith(OP.NO_FUNDS));
-    });
-
-    it("Input from wrong msg_sender shoud be rejected", async () => {
-        let receipt: InputReceipt = await cast.sendInput(
-            ALICE_ADDRESS,
-            "Input from wrong msg_sender"
-        );
-        const reports = await graphql.getReports(receipt);
-        expect(reports.length).to.eq(1);
-        const reportPayload: string = hex2str(reports[0].payload);
-        expect(reportPayload.startsWith(OP.INVALID_INPUT));
-    });
-
-    it("Valid input results in a voucher, which is executed", async () => {
+    it("Valid input from WITHDRAW_ADDRESS results in a voucher", async () => {
         const AMOUNT: ethers.BigNumber = ethers.BigNumber.from(
             "100000000000000000000"
         );
 
-        const initialBobBalance = await cast.getBalance(BOB_ADDRESS);
+        const initialBobBalance = await cast.getErc20Balance(BOB_ADDRESS);
         let dappBalance: ethers.BigNumber = ethers.BigNumber.from(
             await inspect("any_payload_should_work")
         );
@@ -109,10 +83,12 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         logger.verbose("> Bob's   : " + initialBobBalance);
         logger.verbose("> Pot size: " + dappBalance);
 
-        let receipt: InputReceipt = await cast.ethDeposit(
+        await cast.approveAllowance(ALICE_ADDRESS, AMOUNT);
+        logger.verbose("> Allowance approved");
+
+        let receipt: InputReceipt = await cast.erc20Deposit(
             ALICE_ADDRESS,
-            AMOUNT,
-            "Deposit of ETH " + AMOUNT
+            AMOUNT
         );
         logger.verbose("> Deposit performed");
         logger.verbose("> Amount: " + AMOUNT);
@@ -127,8 +103,9 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
             await inspect("any_payload_should_work")
         );
         expect(dappBalance.eq(expectedDappBalance));
-        logger.verbose("> DApp balance matches expected value");
         logger.verbose("> Pot size: " + dappBalance);
+        logger.verbose("> Expected: " + expectedDappBalance);
+        logger.verbose("> DApp balance matches expected value");
 
         receipt = await cast.sendInput(BOB_ADDRESS, "Voucher should be issued");
         reports = await graphql.getReports(receipt);
@@ -148,5 +125,31 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         //TODO Advance epoch
         //TODO Execute voucher
         //TODO Assert Bob's balance corresponds to the previous dappBalance
+    });
+
+    it("Valid input from WITHDRAW_ADDRESS is rejected due to lack of funds", async () => {
+        let dappBalance = await cast.getErc20Balance(testConfig.dappAddress);
+        expect(dappBalance.eq(0));
+
+        let receipt: InputReceipt = await cast.sendInput(
+            BOB_ADDRESS,
+            "Lack of funds"
+        );
+        const reports = await graphql.getReports(receipt);
+        expect(reports.length).to.eq(1);
+
+        const reportPayload: string = hex2str(reports[0].payload);
+        expect(reportPayload.startsWith(OP.NO_FUNDS));
+    });
+
+    it("Valid input (not deposit) from wrong msg_sender is rejected", async () => {
+        let receipt: InputReceipt = await cast.sendInput(
+            ALICE_ADDRESS,
+            "Input from wrong msg_sender"
+        );
+        const reports = await graphql.getReports(receipt);
+        expect(reports.length).to.eq(1);
+        const reportPayload: string = hex2str(reports[0].payload);
+        expect(reportPayload.startsWith(OP.INVALID_INPUT));
     });
 });

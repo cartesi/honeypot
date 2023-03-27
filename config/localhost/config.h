@@ -12,8 +12,18 @@
 
 #ifndef __CONFIG_H_
 #define __CONFIG_H_
+
+// Byte representation of the ONLY ERC-20 contract address accepted by the DApp,
+// 0xc5a5c42992decbae36851359345fe25997F5c42d
+const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
+ERC20_CONTRACT_ADDRESS = {
+    197, 165, 196, 41, 146, 222, 203, 174, 54, 133,
+    19, 89, 52, 95, 226, 89, 151, 245, 196, 45
+};
+
 // Byte representation of the withdrawal address (Bob's),
-// 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+// 0x70997970C51812dc3A010C7d01b50e0d17dc79C8, which
+// corresponds to account index 1
 const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
 WITHDRAWAL_ADDRESS = {
     112, 153, 121, 112, 197, 24, 18, 220, 58, 1,

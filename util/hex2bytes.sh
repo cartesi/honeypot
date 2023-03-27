@@ -21,7 +21,7 @@ hex_string=$1
 
 printf "Converting '${hex_string}'...\n\n"
 
-printf "WITHDRAWAL_ADDRESS = {"
+printf "BYTE_REPRESENTATION = {"
 for ((i = 2; i < ${#hex_string}; i+=2)); do
     hex_number="${hex_string:i:2}"
     printf "$((16#${hex_number}))"
@@ -30,6 +30,6 @@ for ((i = 2; i < ${#hex_string}; i+=2)); do
         printf ", "
     fi
 done
-printf "}\n"
+printf "}\n\n"
 
 printf "Done.\n"

@@ -83,6 +83,27 @@ export const getBalance = async (
     return ethers.BigNumber.from(balanceStr.replace("\n", ""));
 };
 
+/*
+ * Retrieve balance of a given address for a given ERC20 contract.
+ */
+export const getErc20Balance = async (
+        address: string
+        ): Promise<ethers.BigNumber> => {
+    const cmd = "cast";
+    const args = [
+        "call",
+        CONFIG.erc20Address,
+        "balanceOf(address)",
+        address,
+        "--rpc-url",
+        CONFIG.castRpcEndpoint,
+    ];
+    const io = await spawnAsync(cmd, args, {});
+
+    let balanceStr: string = io.stdout.substring(0, io.stdout.length - 1);
+    return ethers.BigNumber.from(balanceStr.replace("\n", ""));
+};
+
 const castSend = async (
     signerAddress: string,
     functionArgs: string[]
@@ -107,7 +128,7 @@ const castSend = async (
 };
 
 /*
- * Send a text input from a given signerAddress
+ * Send a text input from a given signerAddress.
  */
 export const sendInput = async (
     signerAddress: string,
@@ -128,7 +149,7 @@ export const sendInput = async (
 };
 
 /*
- * Approve allowance for an ERC20 deposit
+ * Approve allowance for ERC-20 tokens
  */
 export const approveAllowance = async (
     signerAddress: string,
@@ -167,7 +188,7 @@ export const erc20Deposit = async (
 
 /*
  * Deposit ETH
- */
+*/
 export const ethDeposit = async (
     accountIndex: string,
     amount: ethers.BigNumber,

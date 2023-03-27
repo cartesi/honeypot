@@ -72,13 +72,15 @@ static void send_text_report(std::string message) {
 }
 
 /*
- * Expected format for ETH deposits:
+ *  Expected format for ERC-20 deposits inputs:
  *
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                   ETHER TRANSFER HEADER                       |
+ * |                   ERC-20 TRANSFER HEADER                      |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                         DEPOSITOR                             |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |            ZERO-PADDED ERC-20 CONTRACT ADDRESS                |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                           AMOUNT                              |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -86,10 +88,14 @@ static void send_text_report(std::string message) {
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
 static bool process_deposit(rollup_bytes input_payload) {
-    // Validate input header
-    if (std::memcmp(ETHER_TRANSFER_HEADER.data(),
+    // Validate input header and ERC-20 contract address
+    if (std::memcmp(ERC20_TRANSFER_HEADER.data(),
                     input_payload.data,
-                    FIELD_SIZE)) {
+                    FIELD_SIZE) != 0 ||
+            std::memcmp(ERC20_CONTRACT_ADDRESS.data(),
+                        input_payload.data + 2 * FIELD_SIZE +
+                        ADDRESS_PADDING_SIZE,
+                        CARTESI_ROLLUP_ADDRESS_SIZE) != 0) {
         std::stringstream ss;
         ss << OP_INVALID_DEPOSIT <<
            " - Invalid header on input 0 " <<
@@ -98,10 +104,9 @@ static bool process_deposit(rollup_bytes input_payload) {
         return false;
     }
 
-    size_t pos = 2 * FIELD_SIZE;
+    size_t pos = 3*FIELD_SIZE;
     size_t count = FIELD_SIZE;
     std::vector<uint8_t> amount_bytes;
-
     std::copy(&input_payload.data[pos],
               &input_payload.data[pos + count],
               std::back_inserter(amount_bytes));
@@ -113,68 +118,45 @@ static bool process_deposit(rollup_bytes input_payload) {
     dapp_balance += amount;
 
     std::stringstream ss;
-    ss << OP_DEPOSIT_PROCESSED << " - Amount deposited: ETH " << std::dec
+    ss << OP_DEPOSIT_PROCESSED << " - ERC-20 amount deposited: " << std::dec
        << amount;
-
     send_text_report(ss.str());
     return true;
 }
 
 /*
- * Payload format of a Voucher for a ETH withdrawal:
+ * Payload format of a Voucher for ERC-20 withdrawals:
  *
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |FUNC.  |             ZERO-PADDED ACCOUNT ADDRESS               |
+ * |SELEC. |                                                       |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |       |                        AMOUNT                         |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |       |
  * +-+-+-+-+
- * |FUNC.  |
- * |SELEC. |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                  LOCATION OF THE CALLDATA                     |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                   LENGTH OF THE CALLDATA                      |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                 ZERO-PADDED ACCOUNT ADDRESS                   |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                            AMOUNT                             |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
- * `etherWithdrawal` signature [1]:
- *
- * ```
- * function etherWithdrawal(bytes calldata _data) external returns (bool);
- * ```
- *
- * [1] https://github.com/cartesi-corp/rollups/blob/v0.8.2/onchain/rollups/contracts/interfaces/IEtherPortal.sol#L27
  */
 static void issue_voucher() {
     rollup_voucher voucher{};
     std::vector<uint8_t> voucher_payload;
 
+    // Set ERC-20 contract address
     std::copy(
-        rollup_address.begin(),
-        rollup_address.end(),
+        ERC20_CONTRACT_ADDRESS.begin(),
+        ERC20_CONTRACT_ADDRESS.end(),
         voucher.address);
 
-    // Transfer function selector
+    // Append transfer function selector
     voucher_payload.insert(
         voucher_payload.end(),
-        ETHER_WITHDRAWAL_FUNCTION_SELECTOR_BYTES.begin(),
-        ETHER_WITHDRAWAL_FUNCTION_SELECTOR_BYTES.begin() + 4);
+        TRANSFER_FUNCTION_SELECTOR_BYTES.begin(),
+        TRANSFER_FUNCTION_SELECTOR_BYTES.end());
 
-    // For enconding of dynamic type `bytes`, check:
-    // https://docs.soliditylang.org/en/v0.5.3/abi-spec.html
-    voucher_payload.insert(
-        voucher_payload.end(),
-        CALLDATA_OFFSET_BYTES.begin(),
-        CALLDATA_OFFSET_BYTES.end());
-    voucher_payload.insert(
-        voucher_payload.end(),
-        CALLDATA_LENGTH_BYTES.begin(),
-        CALLDATA_LENGTH_BYTES.end());
-
-    // 12-byte long address padding
+    // Add 12-byte long address padding
     voucher_payload.insert(voucher_payload.end(), ADDRESS_PADDING_SIZE, 0);
 
-    // Pre-defined withdrawal address
+    // Add Pre-defined withdrawal address
     voucher_payload.insert(
         voucher_payload.end(),
         WITHDRAWAL_ADDRESS.begin(),
@@ -194,6 +176,8 @@ static void issue_voucher() {
                              dapp_balance_bytes.begin() +
                              (dapp_balance_bytes.size() -
                               FIELD_SIZE));
+
+    // Add balance
     voucher_payload.insert(
         voucher_payload.end(),
         dapp_balance_bytes.begin(),
@@ -205,7 +189,7 @@ static void issue_voucher() {
     rollup_ioctl(rollup_fd, IOCTL_ROLLUP_WRITE_VOUCHER, &voucher);
 
     std::stringstream ss;
-    ss << OP_VOUCHER_ISSUED << " - Voucher generated for withdrawal of ETH " << std::dec
+    ss << OP_VOUCHER_ISSUED << " - Voucher generated for withdrawal of ERC-20 " << std::dec
        << dapp_balance;
     send_text_report(ss.str());
 

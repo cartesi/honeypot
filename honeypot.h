@@ -28,41 +28,17 @@ extern "C" {
 #define FIELD_SIZE 32
 #define ADDRESS_PADDING_SIZE 12
 
-// Keccak256-encoded "Ether_Transfer". Used to validate ETH deposits.
-// Same as `print(list(Web3.keccak(b"Ether_Transfer")))` in Python.
-const std::array<uint8_t,32>
-ETHER_TRANSFER_HEADER = {
-    242, 88, 224, 252, 57, 211, 90, 189, 125, 131,
-    147, 220, 254, 126, 28, 248, 199, 69, 221, 202,
-    56, 174, 65, 212, 81, 208, 197, 90, 197, 242,
-    196, 206
+// Keccak256-encoded string "ERC20_Transfer". Used to validate ERC-20 deposits.
+const std::array<uint8_t,32> ERC20_TRANSFER_HEADER = {
+    89, 218, 42, 152, 78, 22, 90, 228, 72, 124,
+    153, 229, 209, 220, 167, 224, 76, 138, 153, 48,
+    27, 230, 188, 9, 41, 50, 203, 93, 127, 3,
+    67, 120
 };
 
-// Keccak256-encoded "etherWithdrawal(bytes)". Used when encoding vouchers.
-// Same as `print(list(Web3.keccak(b"etherWithdrawal(bytes)")))` in Python.
-const std::array<uint8_t,32>
-ETHER_WITHDRAWAL_FUNCTION_SELECTOR_BYTES = {
-    116, 149, 107, 148, 16, 146, 150, 104, 139, 32,
-    254, 213, 98, 218, 144, 217, 78, 13, 129, 190,
-    52, 149, 26, 248, 116, 181, 19, 11, 79, 133,
-    189, 187
-};
-
-// Offset to start of voucher calldata bytes
-const std::array<uint8_t,32>
-CALLDATA_OFFSET_BYTES = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 32
-};
-
-// Length of voucher calldata bytes
-const std::array<uint8_t,32>
-CALLDATA_LENGTH_BYTES = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 64
+// First 4 bytes of the Keccak256-encoded result of "transfer(address,uint256)".
+// Used when encoding vouchers.
+const std::array<uint8_t,4> TRANSFER_FUNCTION_SELECTOR_BYTES = {
+    169, 5, 156, 187
 };
 #endif

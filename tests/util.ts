@@ -122,7 +122,7 @@ let testOptions: TestOptions = {
     pollingLimit: 60,
     serverManagerAddress: "",
     dappAddress: "0xf8c694fd58360de278d5ff2276b7130bfdc0192a",
-    erc20Address: "0x610178da211fef7d417bc0e6fed39f05609ad788",
+    erc20Address: "0xc5a5c42992decbae36851359345fe25997F5c42d",
     castRpcEndpoint: "localhost",
     graphQLServer: "http://localhost:4000/graphql",
     inspectServer: "http://localhost:5005/inspect",
