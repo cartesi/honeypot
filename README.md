@@ -186,27 +186,30 @@ Any input sent from a different address that is not a deposit will be rejected, 
 
 *This application does not support `host` mode* because it uses the Cartesi Rollup device driver, which is available only inside the Cartesi Machine.
 
-## Building the application for another environment
+## Building the application for another network
 
-The DApp is [built by default for a local deployment](#build), and have its configuration defined at a configuration [header file](locahost/config.h), which contains the definition of the [`WITHDRAWAL_ADDRESS`](#honeypot-dapp).
+The DApp is [built by default for a local deployment](#build), and have its configuration defined at a configuration [header file](./config/locahost/config.h), which contains the definition of the [`WITHDRAWAL_ADDRESS`](#honeypot-dapp).
 
-In order to build the DApp for an environment other than `localhost`, one needs to create a new configuration file (`config.h`)  and place it in a separate directory, setting the `WITHDRAWAL_ADDRESS` as exemplified in [`localhost/config.h`](./localhost/config.h).
+In order to build the DApp for a network other than `localhost`, one needs to create a new configuration file (`config.h`)  and place it in a separate directory, setting the `WITHDRAWAL_ADDRESS` as exemplified in [`localhost/config.h`](.config/localhost/config.h).
 
 > As a matter of convenience, the shell script [`hex2bytes.sh`](./util/hex2bytes.sh) may be used to convert an address hex string representation to an array of integer bytes to be included in the configuration file.
 
-For example, for a testnet named `test`, the file structure must be:
+For example, for `goerli`, the file structure must be:
 
 ```shell
-test/
-└── config.h
+config/
+└── goerli/
+    └── config.h
 ```
 
-With the configuration file in place, execute the build for the new environment by overriding build argument `ENV` as follows:
+With the configuration file in place, execute the build for the new network by overriding build argument `NETWORK` as follows:
 
 ```shell
-docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --load --set dapp.args.ENV=test
+docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --load --set dapp.args.NETWORK=goerli
 ```
 
-> Build argument `ENV` defaults to `localhost`.
+> Build argument `NETWORK` defaults to `localhost`.
 
-By setting `ENV`, the right configuration file is included and the correct `WITHDRAWAL_ADDRESS` is used to build the DApp.
+> See [`docker buildx bake` documentation](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) for more details.
+
+By setting `NETWORK`, the right configuration file is included (see [`Makefile`](./Makefile)) and the correct `WITHDRAWAL_ADDRESS` is used to build the DApp.

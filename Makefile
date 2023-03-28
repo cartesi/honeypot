@@ -18,7 +18,7 @@ CXX  := riscv64-cartesi-linux-gnu-g++
 honeypot: honeypot.cpp
 	$(CXX) -std=c++17 -Wall -Werror \
 		-I${SYSROOT}/usr/include \
-		-I$(ENV) \
+		-Iconfig/$(NETWORK) \
 		-L${SYSROOT}/usr/lib \
 		-o $@ $^
 
