@@ -186,6 +186,10 @@ static void issue_voucher() {
                                        std::back_inserter(
                                            dapp_balance_bytes),
                                        8);
+    // As export_bits generate only as many bytes as necessary to fit
+    // dapp_balance's value, we need to increase the vector length to
+    // FIELD_SIZE and prepend the value with as many leading zeroes as
+    // needed.
     dapp_balance_bytes.erase(dapp_balance_bytes.begin(),
                              dapp_balance_bytes.begin() +
                              (dapp_balance_bytes.size() -
