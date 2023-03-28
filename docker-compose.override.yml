@@ -3,3 +3,36 @@ version: "3"
 services:
   server_manager:
     image: ${DAPP_IMAGE:-cartesi/dapp:honeypot-devel-server}
+
+  common-contracts:
+    build: ./common-contracts
+    network_mode: host
+    depends_on:
+      hardhat:
+        condition: service_healthy
+    command:
+      [
+        "deploy",
+        "--reset",
+        "--network",
+        "localhost"
+      ]
+    init: true
+    volumes:
+      - blockchain-data:/opt/cartesi/share/blockchain
+      - ./common-contracts/deployments:/app/deployments/localhost
+
+  rollups_dispatcher:
+    depends_on:
+      common-contracts:
+        condition: service_completed_successfully
+
+  state_server:
+    depends_on:
+      common-contracts:
+        condition: service_completed_successfully
+
+  deployer:
+    depends_on:
+      common-contracts:
+        condition: service_completed_successfully

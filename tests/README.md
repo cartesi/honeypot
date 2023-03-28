@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Tests
 
 Before running the tests, make sure the local environment is up and running, as explained in the [Honeypot DApp documentation](../README.md#running-the-application).

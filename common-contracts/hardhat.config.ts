@@ -21,7 +21,6 @@ import "@typechain/hardhat";
 import "hardhat-deploy";
 import "solidity-coverage";
 import "hardhat-gas-reporter";
-import "./tasks/auction/mint"
 
 // read MNEMONIC from file or from env variable
 let mnemonic = process.env.MNEMONIC;
