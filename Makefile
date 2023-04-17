@@ -10,16 +10,14 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
 
-SYSROOT=/opt/riscv/rootfs/buildroot/work/host/riscv64-buildroot-linux-gnu/sysroot
 CXX  := riscv64-cartesi-linux-gnu-g++
 
 .PHONY: clean
 
 honeypot: honeypot.cpp
 	$(CXX) -std=c++17 -Wall -Werror \
-		-I${SYSROOT}/usr/include \
+		-Iboost_1_73_0 \
 		-Iconfig/$(NETWORK) \
-		-L${SYSROOT}/usr/lib \
 		-o $@ $^
 
 clean:

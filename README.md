@@ -44,57 +44,6 @@ config/
 
 ## Building the application
 
-### Requirements
-
-This DApp relies on [Boost's Multiprecision library](https://www.boost.org/doc/libs/1_73_0/libs/multiprecision/doc/html/boost_multiprecision/intro.html) and, thus, must be built on top of a special [rootfs](https://github.com/cartesi/image-rootfs) image, configured with `boost` enabled among its libraries.
-
-To build such an image, proceed as follows:
-
-1. Checkout tag [v0.15.0](https://github.com/cartesi-corp/image-rootfs/tree/v0.15.0) from the repository and init its git submodules
-
-```shell
-git clone https://github.com/cartesi/image-rootfs --branch v0.15.0
-cd image-rootfs
-git submodule update --init
-```
-
-2. Create a baseline image. It's going to take a lot of time.
-
-```shell
-make
-```
-
-3. With the baseline image in place, open the Buildroot configuration UI:
-
-```shell
-make config
-```
-
-4. Once there, go to `Target packages -> Libraries -> Other` and select all Boost packages (`boost*`), just in case.
-5. Save and exit.
-6. **Answer `no` to the question `Do you wish to build it now?`**.
-7. Increase the file system size (managed by `BR2_TARGET_ROOTFS_EXT2_SIZE`) in the Buildroot configuration file (`cartesi-buildroot-config`) to fit the Boost libraries.
-
-```shell
-sed -i 's/BR2_TARGET_ROOTFS_EXT2_SIZE=\"68M\"/BR2_TARGET_ROOTFS_EXT2_SIZE=\"100M\"/g' cartesi-buildroot-config
-```
-
-8. Build the new image.
-
-```shell
-make
-```
-
-9. Tag the new image to match the name expected by the DApp build (see [`Dockerfile`](./Dockerfile)).
-
-```shell
-make tag devel
-```
-
-> For more information on how to build `rootfs` images, please refer to [the repository documentation](https://github.com/cartesi/image-rootfs).
-
-### Build
-
 To build the DApp for a local environment, simply execute:
 
 ```shell
