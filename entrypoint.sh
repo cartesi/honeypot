@@ -13,6 +13,6 @@
 
 set -e
 
-# This DApp does not use rollup-init command on purpuse because it talks to the
+# This DApp does not use rollup-init command on purpose because it talks to the
 # rollup device driver directly.
 ./honeypot
