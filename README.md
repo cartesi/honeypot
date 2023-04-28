@@ -40,6 +40,8 @@ config/
     └── config.h
 ```
 
+> A sample `SimpleERC20` has already been deployed to Goerli at `0x0E1AE9AB7F5feFDFF2587e8e7edB2AFf0c4CDc66`.
+>
 > As a matter of convenience, shell script [`hex2bytes.sh`](./util/hex2bytes.sh) may be used to convert an address hex string representation to an array of integer bytes to be included in the configuration file.
 
 ## Building the application
@@ -119,8 +121,9 @@ cast send $ERC20_ADDRESS \
     "approve(address,uint256)" \
         $DAPP_ADDRESS \
         $AMOUNT \
-    --rpc-url localhost \
-    --from $SIGNER_ADDRESS
+    --rpc-url $NETWORK \
+    --from $SIGNER_ADDRESS \
+    --private-key $PRIVATE_KEY
 ```
 
 Where:
@@ -129,8 +132,9 @@ Where:
 - `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data).
 In this case, `$DAPP_ADDRESS`, which is also the Rollups address, is the *spender*;
 - `$AMOUNT` is the amount of tokens to be requested in the allowance;
-- `localhost` is the name of the local RPC Endpoint as defined at [`foundry.toml`](./foundry.toml);
-- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp.
+- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml);
+- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
+- `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
 
 For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) as the ERC-20 contract would look like this:
 
@@ -157,8 +161,9 @@ cast send $DAPP_ADDRESS \
         $ERC20_ADDRESS \
         $AMOUNT \
         0x00 \
-    --rpc-url localhost \
-    --from $SIGNER_ADDRESS
+    --rpc-url $NETWORK \
+    --from $SIGNER_ADDRESS \
+    --private-key $PRIVATE_KEY
 ```
 
 Where:
@@ -168,8 +173,9 @@ Where:
 It accepts any value, as long as properly ABI-encoded;
 - `$AMOUNT` is the amount of `$ERC20_ADDRESS` to be deposited;
 - `0x00` is a dummy value passed as parameter `bytes`, which corresponds to additional (layer-2) data to be parsed by the DApp;
-- `localhost` is the name of the local RPC Endpoint as defined at [`foundry.toml`](./foundry.toml);
-- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp.
+- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml);
+- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
+- `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
 
 Any deposit will be logged as a `Report` by the DApp.
 
@@ -193,13 +199,14 @@ To check the balance of any account address, including the DApp itself, simply e
 cast call $ERC20_ADDRESS \
     "balanceOf(address)" \
         $ACCOUNT_ADDRESS \
-    --rpc-url localhost
+    --rpc-url $NETWORK
 ```
 
 Where:
 
 - `$ERC20_ADDRESS` is the hex representation of the address of the ERC-20 contract to be used; and
-- `$ACCOUNT_ADDRESS` is the hex representation of the account address to be checked.
+- `$ACCOUNT_ADDRESS` is the hex representation of the account address to be checked;
+- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml).
 
 The call above will return an hex representation of the balance.
 
@@ -222,14 +229,17 @@ In order to perform a withdrawal request, just send any input (`0x00`, in the ex
 cast send $DAPP_ADDRESS \
     "addInput(bytes)" \
         0x00 \
-    --rpc-url localhost \
-    --from $SIGNER_ADDRESS
+    --from $SIGNER_ADDRESS \
+    --private-key $PRIVATE_KEY \
+    --rpc-url $NETWORK
 ```
 
 Where:
 
 - `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
-- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the withdrawal request.
+- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the withdrawal request;
+- `$PRIVATE_KEY` (**mandatory for testnets**) is the private key to associated to `$SIGNER_ADDRESS`.
+- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml).
 
 As repeatedly stated throughout this document, only withdrawal requests coming from the predefined *withdrawal address* will be fulfilled by the Honeypot DApp.
 
@@ -245,6 +255,105 @@ cast send 0xf8c694fd58360de278d5ff2276b7130bfdc0192a \
         0x00 \
     --rpc-url localhost \
     --from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+```
+
+## Deploying the DApp
+
+Deploying a new Cartesi DApp to a blockchain requires creating a smart contract on that network, as well as running a validator node for the DApp.
+
+The first step is to build the DApp's back-end machine, which will produce a hash that serves as a unique identifier.
+
+```shell
+docker buildx bake \
+    -f ./docker-bake.hcl \
+    -f ./docker-bake.override.hcl \
+    machine \
+    --load \
+    --set dapp.args.NETWORK=goerli
+```
+
+Once the machine docker image is ready, it may be used to deploy a corresponding Rollups smart contract.
+This requires you to specify the account and RPC gateway to use when submitting the deploy transaction on the target network, which can be done by defining the following environment variables:
+
+```shell
+export MNEMONIC=<user sequence of twelve words>
+export RPC_URL=<https://your.rpc.gateway>
+```
+
+For example, to deploy on the Goerli testnet using an Alchemy RPC node, you could execute:
+
+```shell
+export MNEMONIC=<user sequence of twelve words>
+export RPC_URL=https://eth-goerli.alchemyapi.io/v2/<API_KEY>
+```
+
+With that in place, you can submit a deploy transaction to the Cartesi DApp Factory contract on the target network by executing the following command:
+
+```shell
+DAPP_NAME=honeypot docker compose \
+    --env-file env.<network> \
+    -f deploy-testnet.yml \
+    up
+```
+
+Here, `env.<network>` specifies general parameters for the target network, like its name and chain ID. In the case of Goerli, the command would be:
+
+```shell
+DAPP_NAME=honeypot docker compose \
+    --env-file env.goerli \
+    -f deploy-testnet.yml \
+    up
+```
+
+This will create a file at `../deployments/<network>/honeypot.json` with the deployed contract's address.
+Once the command finishes, it is advisable to stop the docker compose and remove the volumes created when executing it.
+
+```shell
+DAPP_NAME=honeypot docker compose \
+    --env-file env.<network> \
+    -f deploy-testnet.yml \
+    down -v
+```
+
+After that, a corresponding Cartesi Validator Node must also be instantiated in order to interact with the deployed smart contract on the target network and handle the back-end logic of the DApp.
+Aside from the environment variables defined before, the node will also need a secure websocket endpoint for the RPC gateway (WSS URL).
+
+For example, for Goerli and Alchemy, the following additional environment variable must be defined:
+
+```shell
+export WSS_URL=wss://eth-goerli.alchemyapi.io/v2/<API_KEY>
+```
+
+Make sure to build the node for the target network as explained at [Building for other networks](#building-for-other-networks).
+Then, the node itself can be started by running `docker compose` as follows:
+
+```shell
+DAPP_NAME=honeypot docker compose \
+    --env-file env.<network> \
+    -f docker-compose-testnet.yml \
+    -f docker-compose-testnet.override.yml \
+    up
+```
+
+Specifically for Goerli, execute:
+
+```shell
+DAPP_NAME=honeypot docker compose \
+    --env-file env.goerli \
+    -f docker-compose-testnet.yml \
+    -f docker-compose-testnet.override.yml \
+    up
+```
+
+Alternatively, you can also run the node on host mode by executing:
+
+```shell
+DAPP_NAME=honeypot docker compose \
+    --env-file env.<network> \
+    -f docker-compose-testnet.yml \
+    -f docker-compose-testnet.override.yml \
+    -f docker-compose-host-testnet.yml \
+    up
 ```
 
 ## Running the back-end in host mode

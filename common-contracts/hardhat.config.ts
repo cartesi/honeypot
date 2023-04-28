@@ -31,7 +31,7 @@ const alchemy = (
     gas?: number
 ): HttpNetworkUserConfig => {
     return {
-        url: `https://${network}.g.alchemy.com/v2/${process.env.PROJECT_ID}`,
+        url: `https://eth-${network}.g.alchemy.com/v2/${process.env.API_KEY}`,
         chainId,
         gas,
         accounts: mnemonic ? { mnemonic } : undefined,
