@@ -118,7 +118,7 @@ In order to request an allowance to be approved, execute the following command f
 
 ```shell
 cast send $ERC20_ADDRESS \
-    "approve(address,uint256)" \
+    "increaseAllowance(address,uint256)" \
         $DAPP_ADDRESS \
         $AMOUNT \
     --rpc-url $NETWORK \
@@ -140,7 +140,7 @@ For example, an allowance request coming from account address `0xf39Fd6e51aad88F
 
 ```shell
 cast send 0xc5a5c42992decbae36851359345fe25997F5c42d \
-    "approve(address,uint256)" \
+    "increaseAllowance(address,uint256)" \
         0xf8c694fd58360de278d5ff2276b7130bfdc0192a \
         100000000000000000000 \
     --rpc-url localhost \

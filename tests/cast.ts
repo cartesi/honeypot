@@ -151,13 +151,13 @@ export const sendInput = async (
 /*
  * Approve allowance for ERC-20 tokens
  */
-export const approveAllowance = async (
+export const increaseAllowance = async (
     signerAddress: string,
     amount: ethers.BigNumber
 ): Promise<void> => {
     const functionArgs: string[] = [
         CONFIG.erc20Address,
-        "approve(address,uint256)",
+        "increaseAllowance(address,uint256)",
         CONFIG.dappAddress,
         amount.toString(),
         "0x00",

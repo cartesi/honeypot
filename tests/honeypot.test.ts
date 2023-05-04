@@ -83,8 +83,8 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         logger.verbose("> Bob's   : " + initialBobBalance);
         logger.verbose("> Pot size: " + dappBalance);
 
-        await cast.approveAllowance(ALICE_ADDRESS, AMOUNT);
-        logger.verbose("> Allowance approved");
+        await cast.increaseAllowance(ALICE_ADDRESS, AMOUNT);
+        logger.verbose("> Allowance increased");
 
         let receipt: InputReceipt = await cast.erc20Deposit(
             ALICE_ADDRESS,
