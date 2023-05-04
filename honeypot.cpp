@@ -60,15 +60,55 @@ static std::string hex(const uint8_t *data, uint64_t length) {
     return ss.str();
 }
 
-static void send_report(rollup_bytes payload) {
+static void send_report(std::string message, bool isVerbose) {
     struct rollup_report report {};
-    report.payload = payload;
+    std::vector<uint8_t> message_bytes(message.begin(),
+                                       message.end());
+    report.payload = {message_bytes.data(), message_bytes.size()};
     rollup_ioctl(rollup_fd, IOCTL_ROLLUP_WRITE_REPORT, &report);
+
+    if (isVerbose) {
+        std::cout << "[DApp] " << message << std::endl;
+    }
 }
 
-static void send_text_report(std::string message) {
-    std::vector<uint8_t> message_bytes(message.begin(), message.end());
-    send_report({message_bytes.data(), message_bytes.size()});
+static void send_report(const struct rollup_advance_state request,
+                        const int8_t result,
+                        std::string message) {
+    std::stringstream ss;
+    ss << "0x0" << std::to_string(result) << ": ";
+
+    switch (result) {
+    case OP_DEPOSIT_PROCESSED:
+        ss << "Deposit processed";
+        break;
+    case OP_VOUCHER_ISSUED:
+        ss << "Voucher issued";
+        break;
+    case OP_NO_FUNDS:
+        ss << "No funds";
+        break;
+    case OP_INVALID_INPUT:
+        ss << "Invalid input";
+        break;
+    case OP_INVALID_DEPOSIT:
+        ss << "Invalid deposit";
+        break;
+    default:
+        ss << "Unsupported result";
+    }
+
+    if (message != "") {
+        ss << " - " << message;
+    }
+
+    ss << " (msg_sender: 0x"
+       << hex(request.metadata.msg_sender, CARTESI_ROLLUP_ADDRESS_SIZE)
+       << ", payload: 0x"
+       << hex(request.payload.data, request.payload.length)
+       << ")";
+
+    send_report(ss.str(), true);
 }
 
 /*
@@ -87,7 +127,8 @@ static void send_text_report(std::string message) {
  * |                           L1-DATA                             |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
-static bool process_deposit(rollup_bytes input_payload) {
+static bool process_deposit(rollup_bytes input_payload,
+                            boost::multiprecision::uint256_t *amount_deposited) {
     // Validate input header and ERC-20 contract address
     if (std::memcmp(ERC20_TRANSFER_HEADER.data(),
                     input_payload.data,
@@ -96,11 +137,6 @@ static bool process_deposit(rollup_bytes input_payload) {
                         input_payload.data + 2 * FIELD_SIZE +
                         ADDRESS_PADDING_SIZE,
                         CARTESI_ROLLUP_ADDRESS_SIZE) != 0) {
-        std::stringstream ss;
-        ss << OP_INVALID_DEPOSIT <<
-           " - Invalid header on input 0 " <<
-           hex(input_payload.data, input_payload.length);
-        send_text_report(ss.str());
         return false;
     }
 
@@ -110,17 +146,13 @@ static bool process_deposit(rollup_bytes input_payload) {
     std::copy(&input_payload.data[pos],
               &input_payload.data[pos + count],
               std::back_inserter(amount_bytes));
-
     boost::multiprecision::uint256_t amount;
     boost::multiprecision::import_bits(amount,
                                        amount_bytes.begin(),
                                        amount_bytes.end());
     dapp_balance += amount;
 
-    std::stringstream ss;
-    ss << OP_DEPOSIT_PROCESSED << " - ERC-20 amount deposited: " << std::dec
-       << amount;
-    send_text_report(ss.str());
+    *amount_deposited = amount;
     return true;
 }
 
@@ -188,11 +220,6 @@ static void issue_voucher() {
 
     rollup_ioctl(rollup_fd, IOCTL_ROLLUP_WRITE_VOUCHER, &voucher);
 
-    std::stringstream ss;
-    ss << OP_VOUCHER_ISSUED << " - Voucher generated for withdrawal of ERC-20 " << std::dec
-       << dapp_balance;
-    send_text_report(ss.str());
-
     dapp_balance = 0;
 }
 
@@ -217,37 +244,41 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
         return accept;
     }
 
-    if (msg_sender == rollup_address)
-        accept = process_deposit(request.payload);
-    else if (msg_sender == WITHDRAWAL_ADDRESS) {
+    std::stringstream ss;
+    uint8_t result = OP_INVALID_INPUT;
+    if (msg_sender == rollup_address) {
+        boost::multiprecision::uint256_t amount;
+        accept = process_deposit(request.payload, &amount);
+        if (accept) {
+            ss << "ERC-20 amount deposited: " << std::dec << amount;
+            result = OP_DEPOSIT_PROCESSED;
+        } else {
+            result = OP_INVALID_DEPOSIT;
+        }
+    } else if (msg_sender == WITHDRAWAL_ADDRESS) {
         if (dapp_balance > 0) {
             issue_voucher();
+            result = OP_VOUCHER_ISSUED;
         } else {
+            result = OP_NO_FUNDS;
             accept = false;
-            std::stringstream ss;
-            ss << OP_NO_FUNDS
-               << " - Withdrawal request refused due to lack of funds";
-            send_text_report(ss.str());
         }
     } else {
         accept = false;
-        auto data = std::string_view{
-            reinterpret_cast<const char *>(request.payload.data),
-            request.payload.length
-        };
-        std::stringstream ss;
-        ss << OP_INVALID_INPUT << " - Payload: " << data;
-        send_text_report(ss.str());
     }
 
-    std::cout << "[DApp] Input processed" << std::endl;
+    send_report(request, result, ss.str());
     return accept;
 }
 
 static bool handle_inspect(int rollup_fd, rollup_bytes payload_buffer) {
     std::stringstream ss;
+
+    // TODO: Report balance in JSON format
     ss << dapp_balance;
-    send_text_report(ss.str());
+    send_report(ss.str(), false);
+    std::cout << "[DApp] Balance: " << dapp_balance << std::endl;
+
     return true;
 }
 

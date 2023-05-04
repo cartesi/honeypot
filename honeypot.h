@@ -19,11 +19,11 @@ extern "C" {
 // Path to the Cartesi Rollup device driver inside the Cartesi Machine.
 #define ROLLUP_DEVICE_NAME "/dev/rollup"
 
-#define OP_DEPOSIT_PROCESSED "0x00"
-#define OP_VOUCHER_ISSUED "0x01"
-#define OP_NO_FUNDS "0x02"
-#define OP_INVALID_INPUT "0x03"
-#define OP_INVALID_DEPOSIT "0x04"
+#define OP_DEPOSIT_PROCESSED 0
+#define OP_VOUCHER_ISSUED 1
+#define OP_NO_FUNDS 2
+#define OP_INVALID_INPUT 3
+#define OP_INVALID_DEPOSIT 4
 
 #define FIELD_SIZE 32
 #define ADDRESS_PADDING_SIZE 12
