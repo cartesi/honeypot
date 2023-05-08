@@ -69,7 +69,7 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         logger.log("    Server manager ready!");
     });
 
-    it("Valid input from WITHDRAW_ADDRESS results in a voucher", async () => {
+    it("Withdraw request from WITHDRAW_ADDRESS results in a voucher", async () => {
         const AMOUNT: ethers.BigNumber = ethers.BigNumber.from(
             "100000000000000000000"
         );
@@ -127,7 +127,7 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         //TODO Assert Bob's balance corresponds to the previous dappBalance
     });
 
-    it("Valid input from WITHDRAW_ADDRESS is rejected due to lack of funds", async () => {
+    it("Withdraw request from WITHDRAW_ADDRESS is rejected due to lack of funds", async () => {
         let dappBalance = await cast.getErc20Balance(testConfig.dappAddress);
         expect(dappBalance.eq(0));
 
@@ -142,7 +142,7 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         expect(reportPayload.startsWith(OP.NO_FUNDS));
     });
 
-    it("Valid input (not deposit) from wrong msg_sender is rejected", async () => {
+    it("Withdraw request from wrong msg_sender is rejected", async () => {
         let receipt: InputReceipt = await cast.sendInput(
             ALICE_ADDRESS,
             "Input from wrong msg_sender"
