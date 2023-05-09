@@ -3,34 +3,46 @@ group "default" {
   targets = ["dapp", "server", "console"]
 }
 
+target "local-deployments" {
+  context = "./docker"
+  target = "local-deployments-stage"
+}
+
+target "deployments" {
+  context = "./docker"
+  target = "deployments-stage"
+}
+
 target "fs" {
   context = "./docker"
-  target  = "dapp-fs-build"
+  target  = "fs-stage"
   contexts = {
-    dapp-build = "target:dapp"
+    dapp = "target:dapp"
+    deployments = "target:deployments"
+    local-deployments = "target:local-deployments"
   }
 }
 
 target "server" {
   context = "./docker"
-  target  = "machine-server"
+  target  = "server-stage"
   contexts = {
-    dapp-build = "target:dapp"
+    fs = "target:fs"
   }
 }
 
 target "console" {
   context = "./docker"
-  target  = "machine-console"
+  target  = "console-stage"
   contexts = {
-    dapp-build = "target:dapp"
+    fs = "target:fs"
   }
 }
 
 target "machine" {
   context = "./docker"
-  target  = "machine-standalone"
+  target  = "machine-stage"
   contexts = {
-    dapp-build = "target:dapp"
+    server = "target:server"
   }
 }

@@ -1,67 +1,51 @@
 version: "3.9"
 
-x-credentials: &postgres-config
+x-credentials:
+  &postgres-config
   POSTGRES_HOSTNAME: database
   POSTGRES_PORT: "5432"
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: password
   POSTGRES_DB: postgres
-  POSTGRES_MIGRATION_FOLDER: /usr/local/bin/migrations/
 
 services:
   hardhat:
-    image: cartesi/rollups-hardhat:0.8.2
+    image: cartesi/rollups-hardhat:0.9.0
     command:
       [
         "node",
         "--network",
         "hardhat",
         "--export",
-        "/opt/cartesi/share/blockchain/localhost.json",
+        "/opt/cartesi/share/deployments/localhost.json"
       ]
     init: true
     ports:
       - "8545:8545"
     healthcheck:
       test:
-        ["CMD", "test", "-f", "/opt/cartesi/share/blockchain/localhost.json"]
+        [
+          "CMD",
+          "test",
+          "-f",
+          "/opt/cartesi/share/deployments/localhost.json"
+        ]
       interval: 30s
       timeout: 30s
       retries: 5
     volumes:
-      - blockchain-data:/opt/cartesi/share/blockchain
+      - blockchain-data:/opt/cartesi/share/deployments
       - ./deployments:/app/rollups/deployments
 
-  rollups_dispatcher:
-    image: cartesi/rollups-dispatcher:0.8.2
-    command:
-      [
-        "--rd-dapp-contract-address-file",
-        "/deployments/localhost/dapp.json",
-        "--rd-initial-epoch",
-        "0",
-        "--sc-grpc-endpoint",
-        "http://state_server:50051",
-        "--sc-default-confirmations",
-        "1",
-        "--tx-provider-http-endpoint",
-        "http://hardhat:8545",
-        "--tx-mnemonic",
-        "test test test test test test test test test test test junk",
-        "--tx-chain-id",
-        "31337",
-        "--tx-chain-is-legacy",
-        "${TX_LEGACY:-false}",
-        "--tx-default-confirmations",
-        "2",
-        "--redis-endpoint",
-        "redis://redis:6379",
-      ]
+  dispatcher:
+    image: cartesi/rollups-dispatcher:0.9.0
     restart: always
     depends_on:
       hardhat:
         condition: service_healthy
       hardhat_set_interval:
+        condition: service_completed_successfully
+      deployer:
         condition: service_completed_successfully
       state_server:
         condition: service_healthy
@@ -69,56 +53,45 @@ services:
         condition: service_healthy
     environment:
       RUST_LOG: info
+      RD_DAPP_DEPLOYMENT_FILE: /deployments/localhost/dapp.json
+      RD_ROLLUPS_DEPLOYMENT_FILE: /opt/cartesi/share/deployments/localhost.json
+      RD_EPOCH_DURATION: 86400
+      SC_GRPC_ENDPOINT: http://state_server:50051
+      SC_DEFAULT_CONFIRMATIONS: 1
+      TX_PROVIDER_HTTP_ENDPOINT: http://hardhat:8545
+      TX_MNEMONIC: "test test test test test test test test test test test junk"
+      TX_CHAIN_ID: 31337
+      TX_CHAIN_IS_LEGACY: ${TX_LEGACY:-false}
+      TX_DEFAULT_CONFIRMATIONS: 2
+      REDIS_ENDPOINT: redis://redis:6379
     volumes:
-      - blockchain-data:/opt/cartesi/share/blockchain:ro
-      - ./deployments:/deployments
+      - blockchain-data:/opt/cartesi/share/deployments:ro
+      - ./deployments:/deployments:ro
 
   state_server:
-    image: cartesi/rollups-state-server:0.8.2
-    command: [
-        "--sf-genesis-block",
-        "0x1",
-        "--sf-safety-margin",
-        "1",
-        "--bh-http-endpoint",
-        "http://hardhat:8545",
-        "--bh-ws-endpoint",
-        "ws://hardhat:8545",
-        "--bh-block-timeout",
-        "8", # just a few seconds more than the configured automatic interval mining
-      ]
+    image: cartesi/rollups-state-server:0.9.0
     restart: always
     healthcheck:
-      test: ["CMD", "grpc-health-probe", "-addr=:50051"]
+      test: ["CMD-SHELL","bash -c 'echo \"\" > /dev/tcp/127.0.0.1/50051;'"]
       interval: 10s
       timeout: 5s
       retries: 5
     depends_on:
       hardhat:
         condition: service_healthy
-    volumes:
-      - blockchain-data:/opt/cartesi/share/blockchain:ro
     environment:
       RUST_LOG: info
+      SF_GENESIS_BLOCK: 0x1
+      SF_SAFETY_MARGIN: 1
+      BH_HTTP_ENDPOINT: http://hardhat:8545
+      BH_WS_ENDPOINT: ws://hardhat:8545
+      BH_BLOCK_TIMEOUT: 8
 
-  server_manager_broker_proxy:
-    image: cartesi/rollups-server-manager-broker-proxy:0.8.2
-    command:
-      [
-        "--chain-id",
-        "31337",
-        "--dapp-contract-address-file",
-        "/deployments/localhost/dapp.json",
-        "--redis-endpoint",
-        "redis://redis:6379",
-        "--server-manager-endpoint",
-        "http://server_manager:5001",
-        "--session-id",
-        "default_rollups_id",
-      ]
+  advance_runner:
+    image: cartesi/rollups-advance-runner:0.9.0
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "--fail", "localhost:8080/healthz"]
+      test: [ "CMD", "curl", "--fail", "localhost:8080/healthz" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -130,27 +103,35 @@ services:
       deployer:
         condition: service_completed_successfully
     volumes:
-      - ./deployments:/deployments
+      - ./deployments:/deployments:ro
+      - machine:/var/opt/cartesi/machine-snapshots
     environment:
       RUST_LOG: info
+      SERVER_MANAGER_ENDPOINT: http://server_manager:5001
+      SESSION_ID: default_rollups_id
+      REDIS_ENDPOINT: redis://redis:6379
+      CHAIN_ID: 31337
+      DAPP_CONTRACT_ADDRESS_FILE: /deployments/localhost/dapp.json
+      SNAPSHOT_DIR: /var/opt/cartesi/machine-snapshots
+      SNAPSHOT_LATEST: /var/opt/cartesi/machine-snapshots/latest
 
   server_manager:
     restart: always
     ports:
       - "5001:5001"
     healthcheck:
-      test: ["CMD", "grpc-health-probe", "-addr=:5001"]
+      test: ["CMD-SHELL","bash -c 'echo \"\" > /dev/tcp/127.0.0.1/5001;'"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
-      - machine:/opt/cartesi/share/dapp-bin
+      - machine:/var/opt/cartesi/machine-snapshots
     environment:
       - SERVER_MANAGER_LOG_LEVEL=warning
       - REMOTE_CARTESI_MACHINE_LOG_LEVEL=info
 
   deployer:
-    image: cartesi/rollups-cli:0.8.2
+    image: cartesi/rollups-cli:0.9.0
     restart: on-failure
     depends_on:
       hardhat:
@@ -163,17 +144,17 @@ services:
         "--rpc",
         "http://hardhat:8545",
         "--deploymentFile",
-        "/opt/cartesi/share/blockchain/localhost.json",
+        "/opt/cartesi/share/deployments/localhost.json",
         "--mnemonic",
         "test test test test test test test test test test test junk",
         "--templateHashFile",
-        "/opt/cartesi/share/dapp-bin/hash",
+        "/var/opt/cartesi/machine-snapshots/0_0/hash",
         "--outputFile",
-        "/deployments/localhost/dapp.json",
+        "/deployments/localhost/dapp.json"
       ]
     volumes:
-      - blockchain-data:/opt/cartesi/share/blockchain
-      - machine:/opt/cartesi/share/dapp-bin:ro
+      - blockchain-data:/opt/cartesi/share/deployments:ro
+      - machine:/var/opt/cartesi/machine-snapshots:ro
       - ./deployments:/deployments
 
   hardhat_stop_automine:
@@ -188,7 +169,7 @@ services:
       [
         "--data",
         '{"id":1337,"jsonrpc":"2.0","method":"evm_setAutomine","params":[false]}',
-        "http://hardhat:8545",
+        "http://hardhat:8545"
       ]
 
   hardhat_set_interval:
@@ -203,20 +184,11 @@ services:
       [
         "--data",
         '{"id":1337,"jsonrpc":"2.0","method":"evm_setIntervalMining","params":[5000]}',
-        "http://hardhat:8545",
+        "http://hardhat:8545"
       ]
 
-  rollups_inspect_server:
-    image: cartesi/rollups-inspect-server:0.8.2
-    command:
-      [
-        "--inspect-server-address",
-        "0.0.0.0:5005",
-        "--server-manager-address",
-        "server_manager:5001",
-        "--session-id",
-        "default_rollups_id",
-      ]
+  inspect_server:
+    image: cartesi/rollups-inspect-server:0.9.0
     restart: always
     ports:
       - "5005:5005"
@@ -225,47 +197,31 @@ services:
         condition: service_healthy
     environment:
       RUST_LOG: info
+      INSPECT_SERVER_ADDRESS: 0.0.0.0:5005
+      SERVER_MANAGER_ADDRESS: server_manager:5001
+      SESSION_ID: default_rollups_id
 
-  rollups_indexer:
-    image: cartesi/rollups-indexer:0.8.2
-    command:
-      [
-        "--dapp-contract-address-file",
-        "/deployments/localhost/dapp.json",
-        "--session-id",
-        "default_rollups_id",
-        "--initial-epoch",
-        "0",
-        "--interval",
-        "10",
-        "--confirmations",
-        "1",
-        "--state-server-endpoint",
-        "http://state_server:50051",
-        "--mm-endpoint",
-        "http://server_manager:5001",
-      ]
+  indexer:
+    image: cartesi/rollups-indexer:0.9.0
     restart: always
     depends_on:
-      hardhat:
-        condition: service_healthy
-      hardhat_set_interval:
-        condition: service_completed_successfully
-      state_server:
-        condition: service_healthy
-      server_manager:
-        condition: service_healthy
       database:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      deployer:
+        condition: service_completed_successfully
     environment:
       <<: *postgres-config
       RUST_LOG: info
+      REDIS_ENDPOINT: redis://redis:6379
+      CHAIN_ID: 31337
+      DAPP_CONTRACT_ADDRESS_FILE: /deployments/localhost/dapp.json
     volumes:
-      - blockchain-data:/opt/cartesi/share/blockchain
-      - ./deployments:/deployments
+      - ./deployments:/deployments:ro
 
-  query_server:
-    image: cartesi/query-server:0.8.2
+  graphql_server:
+    image: cartesi/rollups-graphql-server:0.9.0
     ports:
       - "4000:4000"
     depends_on:
@@ -282,7 +238,7 @@ services:
     ports:
       - 5432:5432
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -297,7 +253,7 @@ services:
       - 6379:6379
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
