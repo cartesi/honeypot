@@ -22,7 +22,7 @@ services:
       - blockchain-data:/opt/cartesi/share/blockchain
       - ./common-contracts/deployments:/app/deployments/localhost
 
-  rollups_dispatcher:
+  dispatcher:
     depends_on:
       common-contracts:
         condition: service_completed_successfully

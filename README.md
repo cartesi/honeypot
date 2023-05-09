@@ -57,16 +57,16 @@ docker buildx bake \
 
 ### Building for other networks
 
-In order to build the DApp for another network, simply override build argument `NETWORK`, which defaults to `localhost`, by setting a value to `dapp.args.NETWORK`, so the [configuration file related to the selected network](#customizing-the-dapp-for-other-networks) is included during the build process (see [`Makefile`](./Makefile)).
+In order to build the DApp for another network, simply override build argument `NETWORK`, which defaults to `localhost`, by setting a value to `*.args.NETWORK`, so the [configuration file related to the selected network](#customizing-the-dapp-for-other-networks) is included during the build process (see [`Makefile`](./Makefile)).
 
-For example, assuming there's a valid configuration file for the Goerli network, set `dapp.args.NETWORK` to `goerli` during the build as follows:
+For example, assuming there's a valid configuration file for the Goerli network, set `*.args.NETWORK` to `goerli` during the build as follows:
 
 ```shell
 docker buildx bake \
     -f docker-bake.hcl \
     -f docker-bake.override.hcl \
     --load \
-    --set dapp.args.NETWORK=goerli
+    --set *.args.NETWORK=goerli
 ```
 
 > See [documentation](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) for more details about overriding target configurations for `docker buildx bake`.
