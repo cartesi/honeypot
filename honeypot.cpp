@@ -13,17 +13,16 @@
 #include <algorithm>
 #include <cstring>
 #include <execution>
+#include <fcntl.h>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <vector>
-
-#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <vector>
 
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -54,20 +53,22 @@ static void rollup_ioctl(int rollup_fd, unsigned long request, void *data) {
 
 static std::string hex(const uint8_t *data, uint64_t length) {
     std::stringstream ss;
-    for (auto b: std::string_view{reinterpret_cast<const char *>(data), length}) {
-        ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(b);
+    for (auto b: std::string_view{reinterpret_cast<const char *>(data),
+                                  length}) {
+        ss << std::hex << std::setfill('0') << std::setw(2)
+           << static_cast<unsigned>(b);
     }
     return ss.str();
 }
 
-static void send_report(std::string message, bool isVerbose) {
+static void send_report(std::string message, bool verbose) {
     struct rollup_report report {};
     std::vector<uint8_t> message_bytes(message.begin(),
                                        message.end());
     report.payload = {message_bytes.data(), message_bytes.size()};
     rollup_ioctl(rollup_fd, IOCTL_ROLLUP_WRITE_REPORT, &report);
 
-    if (isVerbose) {
+    if (verbose) {
         std::cout << "[DApp] " << message << std::endl;
     }
 }
