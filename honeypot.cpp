@@ -30,7 +30,6 @@
 #include "config.h"
 
 static int rollup_fd;
-static std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE> rollup_address;
 static boost::multiprecision::uint256_t dapp_balance;
 
 static int open_rollup_device() {
@@ -130,22 +129,28 @@ static void send_report(const struct rollup_advance_state request,
  */
 static bool process_deposit(rollup_bytes input_payload,
                             boost::multiprecision::uint256_t *amount_deposited) {
-    // Validate input header and ERC-20 contract address
-    if (std::memcmp(ERC20_TRANSFER_HEADER.data(),
-                    input_payload.data,
-                    FIELD_SIZE) != 0 ||
-            std::memcmp(ERC20_CONTRACT_ADDRESS.data(),
-                        input_payload.data + 2 * FIELD_SIZE +
-                        ADDRESS_PADDING_SIZE,
-                        CARTESI_ROLLUP_ADDRESS_SIZE) != 0) {
+    const uint8_t SUCCESSFUL_DEPOSIT = 1;
+    size_t pos;
+
+    // Validate payload comes from a successful deposit
+    if (SUCCESSFUL_DEPOSIT != *input_payload.data)
+    {
         return false;
     }
 
-    size_t pos = 3*FIELD_SIZE;
-    size_t count = FIELD_SIZE;
+    // Validate ERC-20 contract address
+    pos = 1;
+    if (std::memcmp(ERC20_CONTRACT_ADDRESS.data(),
+                    input_payload.data + pos,
+                    CARTESI_ROLLUP_ADDRESS_SIZE) != 0) {
+        return false;
+    }
+
+    // Read deposit amount
+    pos += 2 * CARTESI_ROLLUP_ADDRESS_SIZE;
     std::vector<uint8_t> amount_bytes;
     std::copy(&input_payload.data[pos],
-              &input_payload.data[pos + count],
+              &input_payload.data[pos + FIELD_SIZE],
               std::back_inserter(amount_bytes));
     boost::multiprecision::uint256_t amount;
     boost::multiprecision::import_bits(amount,
@@ -178,7 +183,7 @@ static void issue_voucher() {
     std::copy(
         ERC20_CONTRACT_ADDRESS.begin(),
         ERC20_CONTRACT_ADDRESS.end(),
-        voucher.address);
+        voucher.destination);
 
     // Append transfer function selector
     voucher_payload.insert(
@@ -236,18 +241,9 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
               request.metadata.msg_sender + CARTESI_ROLLUP_ADDRESS_SIZE,
               msg_sender.begin());
 
-    if (request.metadata.epoch_index == 0 && request.metadata.input_index == 0) {
-        rollup_address = msg_sender;
-        std::cout << "[DApp] Captured rollup address: 0x"
-                  << hex(request.metadata.msg_sender,
-                         CARTESI_ROLLUP_ADDRESS_SIZE)
-                  << std::endl;
-        return accept;
-    }
-
     std::stringstream ss;
     uint8_t result = OP_INVALID_INPUT;
-    if (msg_sender == rollup_address) {
+    if (msg_sender == ERC20_PORTAL_ADDRESS) {
         boost::multiprecision::uint256_t amount;
         accept = process_deposit(request.payload, &amount);
         if (accept) {
