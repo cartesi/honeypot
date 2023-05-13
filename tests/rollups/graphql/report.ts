@@ -11,31 +11,25 @@
 import { createClient, defaultExchanges } from "@urql/core";
 import fetch from "cross-fetch";
 import {
-    ReportsDocument,
-    ReportsByEpochDocument,
-    ReportsByEpochAndInputDocument,
+    ReportsByInputDocument,
     Report,
     Input,
-    ReportDocument,
 } from "../../generated-src/graphql";
 
 import { getTestOptions, logger, timer } from "../../util";
-import { InputReceipt } from "../../types";
 
 // Define PartialReport type only with the desired fields of the full Report
 // defined by the GraphQL schema
-export type PartialEpoch = Pick<Input, "index">;
-export type PartialInput = Pick<Input, "index"> & { epoch: PartialEpoch };
-export type PartialReport = Pick<
-    Report,
-    "__typename" | "id" | "index" | "payload"
-> & {
+export type PartialInput = Pick<Input, "index">;
+export type PartialReport = Pick<Report, "__typename" | "index" | "payload"> & {
     input: PartialInput;
 };
+export type PartialReportEdge = { node: PartialReport };
 
 // define a type predicate to filter out reports
-const isPartialReport = (n: PartialReport | null): n is PartialReport =>
-    n !== null;
+const isPartialReportEdge = (
+    n: PartialReportEdge | null
+): n is PartialReportEdge => n !== null;
 
 const CONFIG = getTestOptions();
 
@@ -45,7 +39,7 @@ const CONFIG = getTestOptions();
  * @returns List of reports, returned as PartialReport objects
  */
 export const getReports = async (
-    inputReceipt: InputReceipt
+    inputIndex?: number
 ): Promise<PartialReport[]> => {
     // Create GraphQL client to reader server
     const url: string = CONFIG.graphQLServer;
@@ -53,57 +47,27 @@ export const getReports = async (
 
     // Query the GraphQL server for reports according to the input receipt
     logger.verbose(
-        `Querying ${url} for reports of ${JSON.stringify(inputReceipt)}...`
+        `Querying ${url} for reports of input index "${inputIndex}"...`
     );
 
     let count = 0;
+    await timer(10);
     do {
-        await timer(1);
         logger.verbose(`Attempt: ${count}`);
         count++;
 
-        if (
-            inputReceipt.epoch_index !== undefined &&
-            inputReceipt.input_index !== undefined
-        ) {
-            // list reports querying by epoch and input
+        if (inputIndex !== undefined) {
+            // list reports querying by input
             const { data, error } = await client
-                .query(ReportsByEpochAndInputDocument, {
-                    epoch_index: inputReceipt.epoch_index,
-                    input_index: inputReceipt.input_index,
-                })
+                .query(ReportsByInputDocument, { inputIndex: inputIndex })
                 .toPromise();
-            if (data?.epoch?.input?.reports) {
-                return data.epoch.input.reports.nodes.filter<PartialReport>(
-                    isPartialReport
-                );
+            if (data?.input?.reports?.edges) {
+                return data.input.reports.edges
+                    .filter<PartialReportEdge>(isPartialReportEdge)
+                    .map((e) => e.node);
             }
         }
+        await timer(1);
     } while (count < CONFIG.pollingLimit);
     return [];
-};
-
-//TODO Use pollingLimit
-/**
- * Query a GraphQL server looking for a specific report
- * @param id ID of the report
- * @returns The corresponding report, returned as a full Report object
- */
-export const getReport = async (id: string): Promise<Report> => {
-    // create GraphQL client to reader server
-    const url: string = CONFIG.graphQLServer;
-    const client = createClient({ url, exchanges: defaultExchanges, fetch });
-
-    // query the GraphQL server for the report
-    console.log(`Querying ${url} for report "${id}"...`);
-
-    const { data, error } = await client
-        .query(ReportDocument, { id })
-        .toPromise();
-
-    if (data?.report) {
-        return data.report as Report;
-    } else {
-        throw new Error(error?.message);
-    }
 };

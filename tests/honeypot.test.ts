@@ -27,15 +27,10 @@ import {
     getTestOptions,
 } from "./util";
 
-import { InputReceipt } from "./types";
-
 const PROJECT_NAME = require("project-name");
 
-// TODO Move SERVER_MANAGER_PROTO to rollups/rollups.ts
 const SERVER_MANAGER_PROTO = "./grpc-interfaces/server-manager.proto";
 
-//TODO Make addresses configurable
-const DAPP_ADDRESS = "0xf8c694fd58360de278d5ff2276b7130bfdc0192a";
 const ALICE_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const BOB_ADDRESS = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
 
@@ -86,14 +81,12 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         await cast.increaseAllowance(ALICE_ADDRESS, AMOUNT);
         logger.verbose("> Allowance increased");
 
-        let receipt: InputReceipt = await cast.erc20Deposit(
-            ALICE_ADDRESS,
-            AMOUNT
-        );
+        let inputIndex: number = await cast.erc20Deposit(ALICE_ADDRESS, AMOUNT);
+        logger.verbose("> Input index: " + inputIndex);
         logger.verbose("> Deposit performed");
         logger.verbose("> Amount: " + AMOUNT);
 
-        let reports = await graphql.getReports(receipt);
+        let reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
         let reportPayload: string = hex2str(reports[0].payload);
         expect(reportPayload.startsWith(OP.DEPOSIT_PROCESSED));
@@ -107,35 +100,30 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         logger.verbose("> Expected: " + expectedDappBalance);
         logger.verbose("> DApp balance matches expected value");
 
-        receipt = await cast.sendInput(BOB_ADDRESS, "Voucher should be issued");
-        reports = await graphql.getReports(receipt);
+        inputIndex = await cast.sendInput(BOB_ADDRESS, "0x00");
+        logger.verbose("> Input index: " + inputIndex);
+
+        reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
         reportPayload = hex2str(reports[0].payload);
         expect(reportPayload.startsWith(OP.VOUCHER_ISSUED));
         logger.verbose("> Voucher issued");
 
         let vouchers: graphql.PartialVoucher[] = await graphql.getVouchers(
-            receipt
+            inputIndex
         );
 
         expect(vouchers.length).to.eq(1);
         logger.verbose("> Voucher retrieved");
         logger.verbose(vouchers[0]);
-
-        //TODO Advance epoch
-        //TODO Execute voucher
-        //TODO Assert Bob's balance corresponds to the previous dappBalance
     });
 
     it("Withdraw request from WITHDRAW_ADDRESS is rejected due to lack of funds", async () => {
         let dappBalance = await cast.getErc20Balance(testConfig.dappAddress);
         expect(dappBalance.eq(0));
 
-        let receipt: InputReceipt = await cast.sendInput(
-            BOB_ADDRESS,
-            "Lack of funds"
-        );
-        const reports = await graphql.getReports(receipt);
+        let inputIndex: number = await cast.sendInput(BOB_ADDRESS, "0x00");
+        const reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
 
         const reportPayload: string = hex2str(reports[0].payload);
@@ -143,11 +131,10 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
     });
 
     it("Withdraw request from wrong msg_sender is rejected", async () => {
-        let receipt: InputReceipt = await cast.sendInput(
-            ALICE_ADDRESS,
-            "Input from wrong msg_sender"
-        );
-        const reports = await graphql.getReports(receipt);
+        let inputIndex: number = await cast.sendInput(ALICE_ADDRESS, "0x00");
+        logger.verbose("> Input index: " + inputIndex);
+
+        const reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
         const reportPayload: string = hex2str(reports[0].payload);
         expect(reportPayload.startsWith(OP.INVALID_INPUT));

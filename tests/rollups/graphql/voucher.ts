@@ -11,31 +11,27 @@
 import { createClient, defaultExchanges } from "@urql/core";
 import fetch from "cross-fetch";
 import {
-    VouchersDocument,
-    VouchersByEpochDocument,
-    VouchersByEpochAndInputDocument,
+    VouchersByInputDocument,
     Voucher,
     Input,
-    VoucherDocument,
 } from "../../generated-src/graphql";
 
-import { InputReceipt } from "../../types";
 import { getTestOptions, logger, timer } from "../../util";
 
-// Define PartialVoucher type only with the desired fields of the full Voucher
-// defined by the GraphQL schema
-export type PartialEpoch = Pick<Input, "index">;
-export type PartialInput = Pick<Input, "index"> & { epoch: PartialEpoch };
+// Define PartialVoucher type only with the desired fields of the full Voucher defined by the GraphQL schema
+export type PartialInput = Pick<Input, "index">;
 export type PartialVoucher = Pick<
     Voucher,
-    "__typename" | "id" | "index" | "destination" | "payload"
+    "__typename" | "index" | "destination" | "payload"
 > & {
     input: PartialInput;
 };
+export type PartialVoucherEdge = { node: PartialVoucher };
 
-// define a type predicate to filter out vouchers
-const isPartialVoucher = (n: PartialVoucher | null): n is PartialVoucher =>
-    n !== null;
+// Define a type predicate to filter out vouchers
+const isPartialVoucherEdge = (
+    n: PartialVoucherEdge | null
+): n is PartialVoucherEdge => n !== null;
 
 const CONFIG = getTestOptions();
 
@@ -47,7 +43,7 @@ const CONFIG = getTestOptions();
  * TODO We could retrieve the whole vouchers instead of partial ones
  */
 export const getVouchers = async (
-    inputReceipt: InputReceipt
+    inputIndex: number
 ): Promise<PartialVoucher[]> => {
     // create GraphQL client to reader server
     const url: string = CONFIG.graphQLServer;
@@ -55,96 +51,33 @@ export const getVouchers = async (
 
     // query the GraphQL server for vouchers corresponding to the input keys
     logger.verbose(
-        `querying ${url} for vouchers of ${JSON.stringify(inputReceipt)}...`
+        `querying ${url} for vouchers of input index ${JSON.stringify(
+            inputIndex
+        )}...`
     );
 
     let count = 0;
+    await timer(10);
     do {
-        await timer(1);
         logger.verbose(`Attempt: ${count}`);
         count++;
 
-        if (
-            inputReceipt.epoch_index !== undefined &&
-            inputReceipt.input_index !== undefined
-        ) {
-            // list vouchers querying by epoch and input
+        if (inputIndex !== undefined) {
+            // list vouchers querying by input
             const { data, error } = await client
-                .query(VouchersByEpochAndInputDocument, {
-                    epoch_index: inputReceipt.epoch_index,
-                    input_index: inputReceipt.input_index,
+                .query(VouchersByInputDocument, {
+                    inputIndex: inputIndex,
                 })
                 .toPromise();
-            if (data?.epoch?.input?.vouchers) {
-                return data.epoch.input.vouchers.nodes.filter<PartialVoucher>(
-                    isPartialVoucher
-                );
-            } else {
-                return [];
-            }
-        } else if (inputReceipt.epoch_index !== undefined) {
-            // list vouchers querying only by epoch
-            const { data, error } = await client
-                .query(VouchersByEpochDocument, {
-                    epoch_index: inputReceipt.epoch_index,
-                })
-                .toPromise();
-            if (data?.epoch?.inputs) {
-                // builds return vouchers array by concatenating each input's vouchers
-                let ret: PartialVoucher[] = [];
-                const inputs = data.epoch.inputs.nodes;
-                for (let input of inputs) {
-                    ret = ret.concat(
-                        input.vouchers.nodes.filter<PartialVoucher>(
-                            isPartialVoucher
-                        )
-                    );
-                }
-                return ret;
-            } else {
-                return [];
-            }
-        } else if (inputReceipt.input_index !== undefined) {
-            throw new Error(
-                "Querying only by input index is not supported. Please define epoch index as well."
-            );
-        } else {
-            // list vouchers using top-level query
-            const { data, error } = await client
-                .query(VouchersDocument, {})
-                .toPromise();
-            if (data?.vouchers) {
-                return data.vouchers.nodes.filter<PartialVoucher>(
-                    isPartialVoucher
-                );
+            if (data?.input?.vouchers?.edges) {
+                return data.input.vouchers.edges
+                    .filter<PartialVoucherEdge>(isPartialVoucherEdge)
+                    .map((e) => e.node);
             } else {
                 return [];
             }
         }
+        await timer(1);
     } while (count < CONFIG.pollingLimit);
     return [];
-};
-
-/**
- * Queries a GraphQL server looking for a specific voucher
- * @param id ID of the voucher
- * @returns The corresponding voucher, returned as a full Voucher object
- */
-export const getVoucher = async (id: string): Promise<Voucher> => {
-    // create GraphQL client to reader server
-    const url: string = CONFIG.graphQLServer;
-    const client = createClient({ url, exchanges: defaultExchanges, fetch });
-
-    // query the GraphQL server for the voucher
-    logger.verbose(`querying ${url} for voucher "${id}"...`);
-
-    const { data, error } = await client
-        .query(VoucherDocument, { id })
-        .toPromise();
-
-    if (data?.voucher) {
-        return data.voucher as Voucher;
-    } else {
-        throw new Error(error?.message);
-    }
 };
