@@ -13,7 +13,7 @@ import * as ethers from "ethers";
 import { request, RequestOptions } from "http";
 
 export const INPUT_ADDED_EVENT_HASH: string =
-    "0xa15a0da5519c084484141aaa73e525cee96062f5decc97e070f0c4da27738bc7";
+    "0x6aaa400068bf4ca337265e2a1e1e841f66b8597fd5b452fdc52a44bed28a0784";
 
 export enum ErrorCodes {
     SESSION_ID_NOT_FOUND = 3,
@@ -53,8 +53,6 @@ export interface CommandOutput {
     process: ChildProcess;
 }
 
-// TODO Come up with a better name for this function as child_process.spawn
-// is asynchronous itself.
 export const spawnAsync = async (
     cmd: string,
     args: string[] = [],
@@ -111,6 +109,8 @@ export interface TestOptions {
     logLevel: LogLevel;
     pollingLimit: number;
     dappAddress: string;
+    inputBoxAddress: string;
+    erc20PortalAddress: string;
     erc20Address: string;
     castRpcEndpoint: string;
     graphQLServer: string;
@@ -121,8 +121,10 @@ let testOptions: TestOptions = {
     logLevel: LogLevel.DEFAULT,
     pollingLimit: 60,
     serverManagerAddress: "",
-    dappAddress: "0xf8c694fd58360de278d5ff2276b7130bfdc0192a",
-    erc20Address: "0xc5a5c42992decbae36851359345fe25997F5c42d",
+    dappAddress: "0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2",
+    inputBoxAddress: "0x5a723220579C0DCb8C9253E6b4c62e572E379945",
+    erc20PortalAddress: "0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40",
+    erc20Address: "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
     castRpcEndpoint: "localhost",
     graphQLServer: "http://localhost:4000/graphql",
     inspectServer: "http://localhost:5005/inspect",
@@ -172,6 +174,16 @@ export const setTestOptions = (argv: string[]): TestOptions => {
     let dappAddress = captureStringArg(argv, "--dappAddress");
     if (dappAddress) {
         options.dappAddress = dappAddress;
+    }
+
+    let inputBoxAddress = captureStringArg(argv, "--inputBoxAddress");
+    if (inputBoxAddress) {
+        options.inputBoxAddress = inputBoxAddress;
+    }
+
+    let erc20PortalAddress = captureStringArg(argv, "--erc20PortalAddress");
+    if (erc20PortalAddress) {
+        options.erc20PortalAddress = erc20PortalAddress;
     }
 
     let erc20Address = captureStringArg(argv, "--erc20Address");

@@ -20,8 +20,6 @@ import {
     INPUT_ADDED_EVENT_HASH,
 } from "./util";
 
-import { InputReceipt } from "./types";
-
 const CONFIG = getTestOptions();
 
 interface TransactionLog {
@@ -52,20 +50,18 @@ interface CastOutput {
     type?: number;
 }
 
-const filterInputReceipt = (rawReceipt: CastOutput): InputReceipt => {
-    let receipt: InputReceipt = {};
-
+const filterInputIndex = (rawReceipt: CastOutput): number => {
     for (let i = 0; i < rawReceipt.logs.length; i++) {
         if (
-            rawReceipt.logs[i].address.toLowerCase() == CONFIG.dappAddress &&
-            rawReceipt.logs[i].topics[0].toLowerCase() == INPUT_ADDED_EVENT_HASH
+            rawReceipt.logs[i].address.toLowerCase() ==
+                CONFIG.inputBoxAddress.toLowerCase() &&
+            rawReceipt.logs[i].topics[0].toLowerCase() ==
+                INPUT_ADDED_EVENT_HASH.toLowerCase()
         ) {
-            receipt.epoch_index = Number(rawReceipt.logs[i].topics[1]);
-            receipt.input_index = Number(rawReceipt.logs[i].topics[2]);
-            return receipt;
+            return Number(rawReceipt.logs[i].topics[2]);
         }
     }
-    return receipt;
+    return -1;
 };
 
 /*
@@ -87,8 +83,8 @@ export const getBalance = async (
  * Retrieve balance of a given address for a given ERC20 contract.
  */
 export const getErc20Balance = async (
-        address: string
-        ): Promise<ethers.BigNumber> => {
+    address: string
+): Promise<ethers.BigNumber> => {
     const cmd = "cast";
     const args = [
         "call",
@@ -133,19 +129,20 @@ const castSend = async (
 export const sendInput = async (
     signerAddress: string,
     payload: string
-): Promise<InputReceipt> => {
+): Promise<number> => {
     let hexPayload: string = ethers.utils.hexlify(
         ethers.utils.toUtf8Bytes(payload)
     );
 
     const functionArgs: string[] = [
+        CONFIG.inputBoxAddress,
+        "addInput(address,bytes)",
         CONFIG.dappAddress,
-        "addInput(bytes)",
         hexPayload,
     ];
 
     const tx = await castSend(signerAddress, functionArgs);
-    return filterInputReceipt(JSON.parse(tx.stdout));
+    return filterInputIndex(JSON.parse(tx.stdout));
 };
 
 /*
@@ -158,7 +155,7 @@ export const increaseAllowance = async (
     const functionArgs: string[] = [
         CONFIG.erc20Address,
         "increaseAllowance(address,uint256)",
-        CONFIG.dappAddress,
+        CONFIG.erc20PortalAddress,
         amount.toString(),
         "0x00",
     ];
@@ -173,27 +170,28 @@ export const increaseAllowance = async (
 export const erc20Deposit = async (
     signerAddress: string,
     amount: ethers.BigNumber
-): Promise<InputReceipt> => {
+): Promise<number> => {
     const functionArgs: string[] = [
-        CONFIG.dappAddress,
-        "erc20Deposit(address,uint256,bytes)",
+        CONFIG.erc20PortalAddress,
+        "depositERC20Tokens(address,address,uint256,bytes)",
         CONFIG.erc20Address,
+        CONFIG.dappAddress,
         amount.toString(),
         "0x00",
     ];
 
     const tx = await castSend(signerAddress, functionArgs);
-    return filterInputReceipt(JSON.parse(tx.stdout));
+    return filterInputIndex(JSON.parse(tx.stdout));
 };
 
 /*
  * Deposit ETH
-*/
+ */
 export const ethDeposit = async (
     accountIndex: string,
     amount: ethers.BigNumber,
     l2Data: string
-): Promise<InputReceipt> => {
+): Promise<number> => {
     const functionArgs: string[] = [
         CONFIG.dappAddress,
         "etherDeposit(bytes)",
@@ -203,5 +201,5 @@ export const ethDeposit = async (
     ];
 
     const tx = await castSend(accountIndex, functionArgs);
-    return filterInputReceipt(JSON.parse(tx.stdout));
+    return filterInputIndex(JSON.parse(tx.stdout));
 };
