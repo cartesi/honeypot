@@ -96,16 +96,23 @@ To install the Foundry development toolchain to have `cast` available, check the
 
 ### Gathering DApp data
 
-The DApp contract address is required for all interactions with the Honeypot.
-In order to gather the address used in a local deployment, first [start up the DApp](./#running-the-application).
-Then, execute the following command from the current directory to extract it from the DApp deployment data:
+A few Cartesi Rollups addresses are required for interactions with the Honeypot DApp.
+
+In order to gather them, first [start up the DApp](./#running-the-application).
+
+For `localhost`, execute the following commands to extract the addresses from the deployment data:
 
 ```shell
-export DAPP_ADDRESS=$(cat deployments/localhost/dapp.json | \
-                        jq -r '.address')
+export DAPP_ADDRESS=$(cat deployments/localhost/dapp.json | jq -r '.address')
+export INPUT_BOX_ADDRESS=$(cat deployments/localhost/InputBox.json | jq -r '.address')
+export ERC20_PORTAL_ADDRESS=$(cat deployments/localhost/ERC20Portal.json | jq -r '.address')
 ```
 
-> In a local environment, `$DAPP_ADDRESS` should be `0xF8C694fd58360De278d5fF2276B7130Bfdc0192A`.
+The following values are expected for the variables above:
+
+- `$DAPP_ADDRESS`: `0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2`;
+- `$INPUT_BOX_ADDRESS`: `0x5a723220579C0DCb8C9253E6b4c62e572E379945`;
+- `$ERC20_PORTAL_ADDRESS`: `0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40`.
 
 ### Depositing funds
 
@@ -119,7 +126,7 @@ In order to request an allowance to be approved, execute the following command f
 ```shell
 cast send $ERC20_ADDRESS \
     "increaseAllowance(address,uint256)" \
-        $DAPP_ADDRESS \
+        $ERC20_PORTAL_ADDRESS \
         $AMOUNT \
     --rpc-url $NETWORK \
     --from $SIGNER_ADDRESS \
@@ -129,19 +136,19 @@ cast send $ERC20_ADDRESS \
 Where:
 
 - `$ERC20_ADDRESS` is the hex representation of the ERC-20 contract address to be used;
-- `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data).
+- `$ERC20_PORTAL_ADDRESS` is the hex representation of the ERC-20 Portal address, as explained in [Gathering DApp data](#gathering-dapp-data).
 In this case, `$DAPP_ADDRESS`, which is also the Rollups address, is the *spender*;
 - `$AMOUNT` is the amount of tokens to be requested in the allowance;
 - `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml);
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
 
-For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) as the ERC-20 contract would look like this:
+For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) (`0xc6e7DF5E7b4f2A278906862b61205850344D4e7d`) as the ERC-20 contract would look like this:
 
 ```shell
-cast send 0xc5a5c42992decbae36851359345fe25997F5c42d \
+cast send 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d \
     "increaseAllowance(address,uint256)" \
-        0xf8c694fd58360de278d5ff2276b7130bfdc0192a \
+        0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40 \
         100000000000000000000 \
     --rpc-url localhost \
     --from 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
@@ -156,9 +163,10 @@ cast send 0xc5a5c42992decbae36851359345fe25997F5c42d \
 With an allowance in place, execute the following command from the current directory to perform a deposit:
 
 ```shell
-cast send $DAPP_ADDRESS \
-    "erc20Deposit(address,uint256,bytes)" \
+cast send $ERC20_PORTAL_ADDRESS \
+    "depositERC20Tokens(address,address,uint256,bytes)" \
         $ERC20_ADDRESS \
+        $DAPP_ADDRESS \
         $AMOUNT \
         0x00 \
     --rpc-url $NETWORK \
@@ -168,9 +176,10 @@ cast send $DAPP_ADDRESS \
 
 Where:
 
-- `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
+- `$ERC20_PORTAL_ADDRESS` is the hex representation of the ERC-20 Portal address, as explained in [Gathering DApp data](#gathering-dapp-data).
 - `$ERC20_ADDRESS` is the hex representation of the ERC-20 contract address to be used;
 It accepts any value, as long as properly ABI-encoded;
+- `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
 - `$AMOUNT` is the amount of `$ERC20_ADDRESS` to be deposited;
 - `0x00` is a dummy value passed as parameter `bytes`, which corresponds to additional (layer-2) data to be parsed by the DApp;
 - `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml);
@@ -182,9 +191,10 @@ Any deposit will be logged as a `Report` by the DApp.
 For example, a deposit performed by account `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` on localhost using `SimplerERC20` would be similar to this:
 
 ```shell
-cast send 0xf8c694fd58360de278d5ff2276b7130bfdc0192a \
-    "erc20Deposit(address,uint256,bytes)" \
-        0xc5a5c42992decbae36851359345fe25997F5c42d \
+cast send 0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40 \
+    "depositERC20Tokens(address,address,uint256,bytes)" \
+        0xc6e7DF5E7b4f2A278906862b61205850344D4e7d \
+        0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2 \
         100000000000000000000 \
         0x00 \
     --rpc-url localhost \
@@ -210,12 +220,12 @@ Where:
 
 The call above will return an hex representation of the balance.
 
-For example, in a local environment, the DApp balance may be retrieved as follows:
+For example, in a local environment, the DApp balance for `SimpleERC20` may be retrieved as follows:
 
 ```shell
-cast call 0xc5a5c42992decbae36851359345fe25997F5c42d \
+cast call 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d \
     "balanceOf(address)" \
-        0xf8c694fd58360de278d5ff2276b7130bfdc0192a \
+        0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2 \
     --rpc-url localhost
 ```
 
@@ -226,8 +236,9 @@ cast call 0xc5a5c42992decbae36851359345fe25997F5c42d \
 In order to perform a withdrawal request, just send any input (`0x00`, in the example below) to the DApp as follows:
 
 ```shell
-cast send $DAPP_ADDRESS \
-    "addInput(bytes)" \
+cast send $INPUT_BOX_ADDRESS \
+    "addInput(address,bytes)" \
+    $DAPP_ADDRESS \
         0x00 \
     --from $SIGNER_ADDRESS \
     --private-key $PRIVATE_KEY \
@@ -236,6 +247,7 @@ cast send $DAPP_ADDRESS \
 
 Where:
 
+- `$INPUT_BOX_ADDRESS` is the hex representation of the InputBox address, as explained in [Gathering DApp data](#gathering-dapp-data);
 - `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the withdrawal request;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key to associated to `$SIGNER_ADDRESS`.
@@ -250,8 +262,9 @@ Any withdrawal request sent from a different address will be rejected, with a `R
 In a local environment, a successful withdrawal request coming from *withdrawal address* `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` would look like this:
 
 ```shell
-cast send 0xf8c694fd58360de278d5ff2276b7130bfdc0192a \
-    "addInput(bytes)" \
+cast send 0x5a723220579C0DCb8C9253E6b4c62e572E379945 \
+    "addInput(address,bytes)" \
+        0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2 \
         0x00 \
     --rpc-url localhost \
     --from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
@@ -355,6 +368,16 @@ DAPP_NAME=honeypot docker compose \
     -f docker-compose-host-testnet.yml \
     up
 ```
+
+### Interacting with a deployed DApp
+
+In order to interact with a deployed DApp, retrieve the addresses of contracts `InputBox` and `ERC20Portal` for the associated network from the [`@cartesi/rollups` npm package](https://www.npmjs.com/package/@cartesi/rollups).
+
+For example, for the Sepolia network, the deployment data can be found at directory `/deployments/sepolia` and be used to define Variables `INPUT_BOX_ADDRESS`, `ERC20_PORTAL_ADDRESS`.
+
+Besides that, `DAPP_ADDRESS` may be retrieved from the DApp deployment data (e.g, `../deployments/sepolia/honeypot.json`, for the Sepolia network), as noted at [Deploying the DApp](#deploying-the-dapp).
+
+With such configuration in place, one can interact with the DApp as explained at [Interacting with the application](#interacting-with-the-application).
 
 ## Running the back-end in host mode
 
