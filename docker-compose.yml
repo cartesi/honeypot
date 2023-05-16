@@ -51,6 +51,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      common-contracts:
+        condition: service_completed_successfully
     environment:
       RUST_LOG: info
       RD_DAPP_DEPLOYMENT_FILE: /deployments/localhost/dapp.json
@@ -79,6 +81,8 @@ services:
     depends_on:
       hardhat:
         condition: service_healthy
+      common-contracts:
+        condition: service_completed_successfully
     environment:
       RUST_LOG: info
       SF_GENESIS_BLOCK: 0x1
@@ -116,6 +120,7 @@ services:
       SNAPSHOT_LATEST: /var/opt/cartesi/machine-snapshots/latest
 
   server_manager:
+    image: ${DAPP_IMAGE:-cartesi/dapp:honeypot-devel-server}
     restart: always
     ports:
       - "5001:5001"
@@ -138,6 +143,8 @@ services:
         condition: service_healthy
       server_manager:
         condition: service_healthy
+      common-contracts:
+        condition: service_completed_successfully
     command:
       [
         "create",
@@ -259,6 +266,23 @@ services:
       retries: 5
     volumes:
       - redis-data:/data
+
+  common-contracts:
+    build: ./common-contracts
+    network_mode: host
+    depends_on:
+      hardhat:
+        condition: service_healthy
+    command:
+      [
+        "deploy",
+        "--reset",
+        "--network",
+        "localhost"
+      ]
+    init: true
+    volumes:
+      - ./common-contracts/deployments:/app/deployments
 
 volumes:
   blockchain-data: {}
