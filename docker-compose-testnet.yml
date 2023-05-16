@@ -76,6 +76,7 @@ services:
       SNAPSHOT_LATEST: /var/opt/cartesi/machine-snapshots/latest
 
   server_manager:
+    image: ${DAPP_IMAGE:-cartesi/dapp:honeypot-devel-server}
     restart: always
     healthcheck:
       test: [ "CMD", "grpc-health-probe", "-addr=:5001" ]

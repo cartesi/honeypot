@@ -50,8 +50,6 @@ To build the DApp for a local environment, simply execute:
 
 ```shell
 docker buildx bake \
-    -f docker-bake.hcl \
-    -f docker-bake.override.hcl \
     --load
 ```
 
@@ -63,8 +61,6 @@ For example, assuming there's a valid configuration file for the Goerli network,
 
 ```shell
 docker buildx bake \
-    -f docker-bake.hcl \
-    -f docker-bake.override.hcl \
     --load \
     --set *.args.NETWORK=goerli
 ```
@@ -278,8 +274,6 @@ The first step is to build the DApp's back-end machine, which will produce a has
 
 ```shell
 docker buildx bake \
-    -f ./docker-bake.hcl \
-    -f ./docker-bake.override.hcl \
     machine \
     --load \
     --set dapp.args.NETWORK=goerli
@@ -344,7 +338,6 @@ Then, the node itself can be started by running `docker compose` as follows:
 DAPP_NAME=honeypot docker compose \
     --env-file env.<network> \
     -f docker-compose-testnet.yml \
-    -f docker-compose-testnet.override.yml \
     up
 ```
 
@@ -354,7 +347,6 @@ Specifically for Goerli, execute:
 DAPP_NAME=honeypot docker compose \
     --env-file env.goerli \
     -f docker-compose-testnet.yml \
-    -f docker-compose-testnet.override.yml \
     up
 ```
 
@@ -364,7 +356,6 @@ Alternatively, you can also run the node on host mode by executing:
 DAPP_NAME=honeypot docker compose \
     --env-file env.<network> \
     -f docker-compose-testnet.yml \
-    -f docker-compose-testnet.override.yml \
     -f docker-compose-host-testnet.yml \
     up
 ```

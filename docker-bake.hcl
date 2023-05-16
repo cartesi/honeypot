@@ -1,4 +1,12 @@
 
+variable "TAG" {
+  default = "devel"
+}
+
+variable "DOCKER_ORGANIZATION" {
+  default = "cartesi"
+}
+
 group "default" {
   targets = ["dapp", "server", "console"]
 }
@@ -29,6 +37,7 @@ target "server" {
   contexts = {
     fs = "target:fs"
   }
+  tags = ["${DOCKER_ORGANIZATION}/dapp:honeypot-${TAG}-server"]
 }
 
 target "console" {
@@ -37,6 +46,7 @@ target "console" {
   contexts = {
     fs = "target:fs"
   }
+  tags = ["${DOCKER_ORGANIZATION}/dapp:honeypot-${TAG}-console"]
 }
 
 target "machine" {
@@ -45,4 +55,8 @@ target "machine" {
   contexts = {
     server = "target:server"
   }
+  tags = ["${DOCKER_ORGANIZATION}/dapp:honeypot-${TAG}-machine"]
+}
+
+target "dapp" {
 }
