@@ -14,14 +14,14 @@
 #define __CONFIG_H_
 
 // Byte representation of the address of the ERC-20 Portal,
-// 0xA53122bA85D9222945855513F0745aFd49b1966A
+// 0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40
 const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
 ERC20_PORTAL_ADDRESS = {
-    165, 49, 34, 186, 133, 217, 34, 41, 69, 133,
-    85, 19, 240, 116, 90, 253, 73, 177, 150, 106
+    67, 64, 172, 79, 205, 252, 94, 248, 211, 73,
+    48, 201, 107, 186, 194, 175, 19, 1, 223, 64
 };
 
-// Byte representation of SimpleERC20 deployed on Goerli:
+// Byte representation of SimpleERC20 deployed on Sepolia:
 // 0x0E1AE9AB7F5feFDFF2587e8e7edB2AFf0c4CDc66
 const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
 ERC20_CONTRACT_ADDRESS = {
