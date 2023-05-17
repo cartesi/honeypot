@@ -47,6 +47,7 @@ const config: HardhatUserConfig = {
         },
         rinkeby: alchemy("rinkeby", 4, 6283185),
         goerli: alchemy("goerli", 5, 6283185),
+        sepolia: alchemy("sepolia", 11155111, 6283185),
         mainnet: alchemy("mainnet", 1, 6283185),
         polygon_mumbai: {
             url: "https://matic-mumbai.chainstacklabs.com",

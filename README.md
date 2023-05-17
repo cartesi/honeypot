@@ -32,15 +32,15 @@ In this case, it corresponds to `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (ac
 
 In order to configure the DApp for a network other than `localhost`, one needs to create a new configuration file (`config.h`) and place it in a separate directory, setting proper values for `ERC20_CONTRACT_ADDRESS` and `WITHDRAWAL_ADDRESS`.
 
-For example, for the Goerli network, the file structure would be:
+For example, for the Sepolia network, the file structure would be:
 
 ```shell
 config/
-└── goerli/
+└── sepolia/
     └── config.h
 ```
 
-> A sample `SimpleERC20` has already been deployed to Goerli at `0x0E1AE9AB7F5feFDFF2587e8e7edB2AFf0c4CDc66`.
+> A sample `SimpleERC20` has already been deployed to Sepolia at `0x0E1AE9AB7F5feFDFF2587e8e7edB2AFf0c4CDc66`.
 >
 > As a matter of convenience, shell script [`hex2bytes.sh`](./util/hex2bytes.sh) may be used to convert an address hex string representation to an array of integer bytes to be included in the configuration file.
 
@@ -57,12 +57,12 @@ docker buildx bake \
 
 In order to build the DApp for another network, simply override build argument `NETWORK`, which defaults to `localhost`, by setting a value to `*.args.NETWORK`, so the [configuration file related to the selected network](#customizing-the-dapp-for-other-networks) is included during the build process (see [`Makefile`](./Makefile)).
 
-For example, assuming there's a valid configuration file for the Goerli network, set `*.args.NETWORK` to `goerli` during the build as follows:
+For example, assuming there's a valid configuration file for the Sepolia network, set `*.args.NETWORK` to `sepolia` during the build as follows:
 
 ```shell
 docker buildx bake \
     --load \
-    --set *.args.NETWORK=goerli
+    --set *.args.NETWORK=sepolia
 ```
 
 > See [documentation](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) for more details about overriding target configurations for `docker buildx bake`.
@@ -276,7 +276,18 @@ The first step is to build the DApp's back-end machine, which will produce a has
 docker buildx bake \
     machine \
     --load \
-    --set dapp.args.NETWORK=goerli
+    --set *.args.NETWORK=$NETWORK
+```
+
+Where `$NETWORK` identifies the target network to which the DApp must be built.
+
+For example, to build the DApp to be deployed to the Sepolia testnet, execute the following:
+
+```shell
+docker buildx bake \
+    machine \
+    --load \
+    --set *.args.NETWORK=sepolia
 ```
 
 Once the machine docker image is ready, it may be used to deploy a corresponding Rollups smart contract.
@@ -287,48 +298,48 @@ export MNEMONIC=<user sequence of twelve words>
 export RPC_URL=<https://your.rpc.gateway>
 ```
 
-For example, to deploy on the Goerli testnet using an Alchemy RPC node, you could execute:
+For example, to deploy on the Sepolia testnet using an Alchemy RPC node, you could execute:
 
 ```shell
 export MNEMONIC=<user sequence of twelve words>
-export RPC_URL=https://eth-goerli.alchemyapi.io/v2/<API_KEY>
+export RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<API_KEY>
 ```
 
 With that in place, you can submit a deploy transaction to the Cartesi DApp Factory contract on the target network by executing the following command:
 
 ```shell
 docker compose \
-    --env-file env.<network> \
+    --env-file env.$NETWORK \
     -f deploy-testnet.yml \
     up
 ```
 
-Here, `env.<network>` specifies general parameters for the target network, like its name and chain ID. In the case of Goerli, the command would be:
+Here, `env.$NETWORK` specifies general parameters for the target network, like its name and chain ID. In the case of Sepolia, the command would be:
 
 ```shell
 docker compose \
-    --env-file env.goerli \
+    --env-file env.sepolia \
     -f deploy-testnet.yml \
     up
 ```
 
-This will create a file at `../deployments/<network>/honeypot.json` with the deployed contract's address.
+This will create a file at `../deployments/$NETWORK/honeypot.json` with the deployed contract's address.
 Once the command finishes, it is advisable to stop the docker compose and remove the volumes created when executing it.
 
 ```shell
 docker compose \
-    --env-file env.<network> \
+    --env-file env.$NETWORK \
     -f deploy-testnet.yml \
     down -v
 ```
 
 After that, a corresponding Cartesi Validator Node must also be instantiated in order to interact with the deployed smart contract on the target network and handle the back-end logic of the DApp.
-Aside from the environment variables defined before, the node will also need a secure websocket endpoint for the RPC gateway (WSS URL).
+Aside from the environment variables defined before, the node will also need a secure websocket endpoint for the RPC gateway (`WSS_URL`).
 
-For example, for Goerli and Alchemy, the following additional environment variable must be defined:
+For example, for Sepolia via Alchemy, the following additional environment variable must be defined:
 
 ```shell
-export WSS_URL=wss://eth-goerli.alchemyapi.io/v2/<API_KEY>
+export WSS_URL=wss://eth-sepolia.g.alchemy.com/v2/<API_KEY>
 ```
 
 Make sure to build the node for the target network as explained at [Building for other networks](#building-for-other-networks).
@@ -336,16 +347,16 @@ Then, the node itself can be started by running `docker compose` as follows:
 
 ```shell
 docker compose \
-    --env-file env.<network> \
+    --env-file env.$NETWORK \
     -f docker-compose-testnet.yml \
     up
 ```
 
-Specifically for Goerli, execute:
+Specifically for Sepolia, execute:
 
 ```shell
 docker compose \
-    --env-file env.goerli \
+    --env-file env.sepolia \
     -f docker-compose-testnet.yml \
     up
 ```
@@ -354,7 +365,7 @@ Alternatively, you can also run the node on host mode by executing:
 
 ```shell
 docker compose \
-    --env-file env.<network> \
+    --env-file env.$NETWORK \
     -f docker-compose-testnet.yml \
     -f docker-compose-host-testnet.yml \
     up
