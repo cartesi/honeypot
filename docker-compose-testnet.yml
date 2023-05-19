@@ -37,7 +37,7 @@ services:
     image: cartesi/rollups-state-server:0.9.0
     restart: always
     healthcheck:
-      test: [ "CMD", "grpc-health-probe", "-addr=:50051" ]
+      test: [ "CMD-SHELL", "bash -c 'echo \"\" > /dev/tcp/127.0.0.1/50051;'" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -79,7 +79,7 @@ services:
     image: ${DAPP_IMAGE:-cartesi/dapp:honeypot-devel-server}
     restart: always
     healthcheck:
-      test: [ "CMD", "grpc-health-probe", "-addr=:5001" ]
+      test: [ "CMD-SHELL", "bash -c 'echo \"\" > /dev/tcp/127.0.0.1/5001;'" ]
       interval: 10s
       timeout: 5s
       retries: 5
