@@ -71,7 +71,7 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
 
         const initialBobBalance = await cast.getErc20Balance(BOB_ADDRESS);
         let dappBalance: ethers.BigNumber = ethers.BigNumber.from(
-            await inspect("any_payload_should_work")
+            await inspect("0x00")
         );
         let expectedDappBalance: ethers.BigNumber = dappBalance.add(AMOUNT);
         logger.verbose("> Balances retrieved");
@@ -92,9 +92,7 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         expect(reportPayload.startsWith(OP.DEPOSIT_PROCESSED));
         logger.verbose("> Report retrieved");
 
-        dappBalance = ethers.BigNumber.from(
-            await inspect("any_payload_should_work")
-        );
+        dappBalance = ethers.BigNumber.from(await inspect("0x00"));
         expect(dappBalance.eq(expectedDappBalance));
         logger.verbose("> Pot size: " + dappBalance);
         logger.verbose("> Expected: " + expectedDappBalance);
