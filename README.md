@@ -297,7 +297,7 @@ export RPC_URL=https://eth-goerli.alchemyapi.io/v2/<API_KEY>
 With that in place, you can submit a deploy transaction to the Cartesi DApp Factory contract on the target network by executing the following command:
 
 ```shell
-DAPP_NAME=honeypot docker compose \
+docker compose \
     --env-file env.<network> \
     -f deploy-testnet.yml \
     up
@@ -306,7 +306,7 @@ DAPP_NAME=honeypot docker compose \
 Here, `env.<network>` specifies general parameters for the target network, like its name and chain ID. In the case of Goerli, the command would be:
 
 ```shell
-DAPP_NAME=honeypot docker compose \
+docker compose \
     --env-file env.goerli \
     -f deploy-testnet.yml \
     up
@@ -316,7 +316,7 @@ This will create a file at `../deployments/<network>/honeypot.json` with the dep
 Once the command finishes, it is advisable to stop the docker compose and remove the volumes created when executing it.
 
 ```shell
-DAPP_NAME=honeypot docker compose \
+docker compose \
     --env-file env.<network> \
     -f deploy-testnet.yml \
     down -v
@@ -335,7 +335,7 @@ Make sure to build the node for the target network as explained at [Building for
 Then, the node itself can be started by running `docker compose` as follows:
 
 ```shell
-DAPP_NAME=honeypot docker compose \
+docker compose \
     --env-file env.<network> \
     -f docker-compose-testnet.yml \
     up
@@ -344,7 +344,7 @@ DAPP_NAME=honeypot docker compose \
 Specifically for Goerli, execute:
 
 ```shell
-DAPP_NAME=honeypot docker compose \
+docker compose \
     --env-file env.goerli \
     -f docker-compose-testnet.yml \
     up
@@ -353,7 +353,7 @@ DAPP_NAME=honeypot docker compose \
 Alternatively, you can also run the node on host mode by executing:
 
 ```shell
-DAPP_NAME=honeypot docker compose \
+docker compose \
     --env-file env.<network> \
     -f docker-compose-testnet.yml \
     -f docker-compose-host-testnet.yml \
