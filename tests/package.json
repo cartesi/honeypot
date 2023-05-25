@@ -5,9 +5,9 @@
     "author": "Cartesi",
     "license": "Apache-2.0",
     "scripts": {
-        "clean": "rimraf dist",
+        "clean": "rimraf generated-src dist",
         "graphql:codegen": "graphql-codegen",
-        "grpc:codegen": "proto-loader-gen-types --grpcLib @grpc/grpc-js --outDir dist/generated-src/proto grpc-interfaces/server-manager.proto",
+        "grpc:codegen": "proto-loader-gen-types --grpcLib @grpc/grpc-js --outDir ./generated-src/proto grpc-interfaces/server-manager.proto",
         "prebuild": "run-p grpc:codegen graphql:codegen",
         "build": "tsc",
         "mocha": "wrap () { mocha -r ts-node/register honeypot.test.ts -t 3m -b --serverManagerAddress 0.0.0.0:5001 $* ; }; wrap",
