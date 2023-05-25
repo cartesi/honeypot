@@ -60,6 +60,28 @@ static std::string hex(const uint8_t *data, uint64_t length) {
     return ss.str();
 }
 
+static void cpp_int_to_bytes(bool fit_32_bytes, const boost::multiprecision::uint256_t cpp_int,
+                             std::vector<uint8_t> *byte_vector) {
+    boost::multiprecision::export_bits(cpp_int,
+                                       std::back_inserter(*byte_vector),
+                                       8);
+    if (fit_32_bytes) {
+        // As export_bits generate only as many bytes as necessary to fit
+        // dapp_balance's value, we need to increase the vector length to
+        // FIELD_SIZE and prepend the value with as many leading zeroes as
+        // needed.
+        byte_vector->erase(byte_vector->begin(),
+                           byte_vector->begin() +
+                           (byte_vector->size() -
+                            FIELD_SIZE));
+    }
+}
+
+static void cpp_int_to_bytes(const boost::multiprecision::uint256_t cpp_int,
+                             std::vector<uint8_t> *byte_vector) {
+    cpp_int_to_bytes(false, cpp_int, byte_vector);
+}
+
 static void send_report(std::string message, bool verbose) {
     struct rollup_report report {};
     std::vector<uint8_t> message_bytes(message.begin(),
@@ -202,18 +224,9 @@ static void issue_voucher() {
 
     // Export DApp balance to 32-byte vector
     std::vector<uint8_t> dapp_balance_bytes(FIELD_SIZE);
-    boost::multiprecision::export_bits(dapp_balance,
-                                       std::back_inserter(
-                                           dapp_balance_bytes),
-                                       8);
-    // As export_bits generate only as many bytes as necessary to fit
-    // dapp_balance's value, we need to increase the vector length to
-    // FIELD_SIZE and prepend the value with as many leading zeroes as
-    // needed.
-    dapp_balance_bytes.erase(dapp_balance_bytes.begin(),
-                             dapp_balance_bytes.begin() +
-                             (dapp_balance_bytes.size() -
-                              FIELD_SIZE));
+    cpp_int_to_bytes(true,
+                     dapp_balance,
+                     &dapp_balance_bytes);
 
     // Add balance
     voucher_payload.insert(
@@ -247,7 +260,8 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
         boost::multiprecision::uint256_t amount;
         accept = process_deposit(request.payload, &amount);
         if (accept) {
-            ss << "ERC-20 amount deposited: " << std::dec << amount;
+            ss << "ERC-20 amount deposited: " << std::dec << amount << ". "
+               << "New pot size = " << dapp_balance;
             result = OP_DEPOSIT_PROCESSED;
         } else {
             result = OP_INVALID_DEPOSIT;
@@ -269,13 +283,14 @@ static bool handle_advance(int rollup_fd, rollup_bytes payload_buffer) {
 }
 
 static bool handle_inspect(int rollup_fd, rollup_bytes payload_buffer) {
-    std::stringstream ss;
+    std::vector<uint8_t> dapp_balance_bytes;
+    cpp_int_to_bytes(dapp_balance, &dapp_balance_bytes);
 
-    // TODO: Report balance in JSON format
-    ss << dapp_balance;
-    send_report(ss.str(), false);
-    std::cout << "[DApp] Balance: " << dapp_balance << std::endl;
+    struct rollup_report report {};
+    report.payload = { dapp_balance_bytes.data(), dapp_balance_bytes.size() };
+    rollup_ioctl(rollup_fd, IOCTL_ROLLUP_WRITE_REPORT, &report);
 
+    std::cout << "[DApp] Pot balance: 0x" << dapp_balance << std::endl;
     return true;
 }
 
