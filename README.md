@@ -199,7 +199,26 @@ cast send 0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40 \
 
 ### Checking the pot balance
 
-To check the balance of any account address, including the DApp itself, simply execute the following command from the current directory:
+The pot balance may be retrieved at all times by sending an [inspect-state request](https://docs.cartesi.io/cartesi-rollups/api/inspect/inspect/#inspect-dapp-state-rest-api) with a non-empty payload to the DApp as follows:
+
+```shell
+curl localhost:5005/inspect/0
+```
+
+The response from such request will contain the amount of tokens held at layer-2, which constitutes the pot balance.
+Here's a sample response from the DApp:
+
+```shell
+{
+    "payload": "0x056bc75e2d63100000"
+}
+```
+
+Notice the pot balance may differ over time from the actual ERC-20 balance held by the DApp at layer-1 due to withdrawal requests not being performed.
+
+#### Retrieving layer-1 balances
+
+To check the layer-1 balance of any account address, including the DApp itself, simply execute the following command from the current directory:
 
 ```shell
 cast call $ERC20_ADDRESS \
@@ -224,8 +243,6 @@ cast call 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d \
         0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2 \
     --rpc-url localhost
 ```
-
-> The DApp balance may also be retrieved by sending an [inspect-state request](https://docs.cartesi.io/cartesi-rollups/api/inspect/inspect/#inspect-dapp-state-rest-api) with any payload to the DApp.
 
 ### Withdrawing the pot
 
