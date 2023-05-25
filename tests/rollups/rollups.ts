@@ -288,7 +288,7 @@ export const inspect = async (query: string): Promise<string> => {
         logger.verbose(`Metadata: ${JSON.stringify(result.metadata)}`);
         logger.verbose(`Reports:`);
         for (let i in result.reports) {
-            payload = hex2str(result.reports[i].payload);
+            payload = result.reports[i].payload;
             logger.verbose(`${i}: ${payload}`);
         }
         if (result.exception_payload) {
