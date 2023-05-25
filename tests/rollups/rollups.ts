@@ -12,13 +12,13 @@ import { RequestOptions } from "http";
 import * as grpc from "@grpc/grpc-js";
 import { ServiceError } from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
-import { ProtoGrpcType } from "../dist/generated-src/proto/server-manager";
-import { GetEpochStatusRequest } from "../dist/generated-src/proto/CartesiServerManager/GetEpochStatusRequest";
-import { GetEpochStatusResponse } from "../dist/generated-src/proto/CartesiServerManager/GetEpochStatusResponse";
-import { GetSessionStatusRequest } from "../dist/generated-src/proto/CartesiServerManager/GetSessionStatusRequest";
-import { GetSessionStatusResponse } from "../dist/generated-src/proto/CartesiServerManager/GetSessionStatusResponse";
-import { ProcessedInput } from "../dist/generated-src/proto/CartesiServerManager/ProcessedInput";
-import { ServerManagerClient } from "../dist/generated-src/proto/CartesiServerManager/ServerManager";
+import { ProtoGrpcType } from "../generated-src/proto/server-manager";
+import { GetEpochStatusRequest } from "../generated-src/proto/CartesiServerManager/GetEpochStatusRequest";
+import { GetEpochStatusResponse } from "../generated-src/proto/CartesiServerManager/GetEpochStatusResponse";
+import { GetSessionStatusRequest } from "../generated-src/proto/CartesiServerManager/GetSessionStatusRequest";
+import { GetSessionStatusResponse } from "../generated-src/proto/CartesiServerManager/GetSessionStatusResponse";
+import { ProcessedInput } from "../generated-src/proto/CartesiServerManager/ProcessedInput";
+import { ServerManagerClient } from "../generated-src/proto/CartesiServerManager/ServerManager";
 import path from "path";
 
 import {
