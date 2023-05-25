@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   machine:
-    image: cartesi/dapp:${DAPP_NAME:?undefined DAPP_NAME}-devel-machine
+    image: cartesi/dapp:honeypot-devel-machine
     command: xxd -c 256 -p hash; sleep 3
     volumes:
       - machine:/opt/cartesi/share/dapp-bin
@@ -22,7 +22,7 @@ services:
         "--templateHashFile",
         "/opt/cartesi/share/dapp-bin/hash",
         "--outputFile",
-        "/deployments/${NETWORK:?undefined NETWORK}/${DAPP_NAME:?undefined DAPP_NAME}.json",
+        "/deployments/${NETWORK:?undefined NETWORK}/honeypot.json",
       ]
     volumes:
       - machine:/opt/cartesi/share/dapp-bin:ro

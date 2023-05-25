@@ -19,7 +19,7 @@ services:
         condition: service_healthy
     environment:
       RUST_LOG: info
-      RD_DAPP_DEPLOYMENT_FILE: /deployments/${NETWORK:?undefined NETWORK}/${DAPP_NAME:?undefined DAPP_NAME}.json
+      RD_DAPP_DEPLOYMENT_FILE: /deployments/${NETWORK:?undefined NETWORK}/honeypot.json
       RD_ROLLUPS_DEPLOYMENT_FILE: /opt/cartesi/share/deployments/${NETWORK:?undefined NETWORK}.json
       RD_EPOCH_DURATION: 86400
       SC_GRPC_ENDPOINT: http://state_server:50051
@@ -71,7 +71,7 @@ services:
       SESSION_ID: default_rollups_id
       REDIS_ENDPOINT: redis://redis:6379
       CHAIN_ID: ${CHAIN_ID:?undefined CHAIN_ID}
-      DAPP_CONTRACT_ADDRESS_FILE: /deployments/${NETWORK:?undefined NETWORK}/${DAPP_NAME:?undefined DAPP_NAME}.json
+      DAPP_CONTRACT_ADDRESS_FILE: /deployments/${NETWORK:?undefined NETWORK}/honeypot.json
       SNAPSHOT_DIR: /var/opt/cartesi/machine-snapshots
       SNAPSHOT_LATEST: /var/opt/cartesi/machine-snapshots/latest
 
@@ -116,7 +116,7 @@ services:
       RUST_LOG: info
       REDIS_ENDPOINT: redis://redis:6379
       CHAIN_ID: ${CHAIN_ID:?undefined CHAIN_ID}
-      DAPP_CONTRACT_ADDRESS_FILE: /deployments/${NETWORK:?undefined NETWORK}/${DAPP_NAME:?undefined DAPP_NAME}.json
+      DAPP_CONTRACT_ADDRESS_FILE: /deployments/${NETWORK:?undefined NETWORK}/honeypot.json
     volumes:
       - ./deployments:/deployments:ro
 
