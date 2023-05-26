@@ -1,5 +1,0 @@
-[rpc_endpoints]
-localhost="http://localhost:8545"
-# Remember to set a valid API_KEY and uncomment the rpc_endpoint definition
-# below to be able to use it:
-#sepolia="https://eth-sepolia.g.alchemy.com/v2/<API_KEY>"

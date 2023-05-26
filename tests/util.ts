@@ -125,7 +125,7 @@ let testOptions: TestOptions = {
     inputBoxAddress: "0x5a723220579C0DCb8C9253E6b4c62e572E379945",
     erc20PortalAddress: "0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40",
     erc20Address: "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
-    castRpcEndpoint: "localhost",
+    castRpcEndpoint: "http://localhost:8545",
     graphQLServer: "http://localhost:4000/graphql",
     inspectServer: "http://localhost:5005/inspect",
 };

@@ -88,8 +88,6 @@ Foundry's command-line tool for performing Ethereum RPC calls, [`cast`](https://
 
 To install the Foundry development toolchain to have `cast` available, check the [installation guide](https://book.getfoundry.sh/getting-started/installation).
 
-> A pre-configured RPC endpoint (`localhost`) is available to help with interactions in a local environment (see [`foundry.toml`](./foundry.toml)).
-
 ### Gathering DApp data
 
 A few Cartesi Rollups addresses are required for interactions with the Honeypot DApp.
@@ -124,7 +122,7 @@ cast send $ERC20_ADDRESS \
     "increaseAllowance(address,uint256)" \
         $ERC20_PORTAL_ADDRESS \
         $AMOUNT \
-    --rpc-url $NETWORK \
+    --rpc-url $RPC_URL \
     --from $SIGNER_ADDRESS \
     --private-key $PRIVATE_KEY
 ```
@@ -135,7 +133,7 @@ Where:
 - `$ERC20_PORTAL_ADDRESS` is the hex representation of the ERC-20 Portal address, as explained in [Gathering DApp data](#gathering-dapp-data).
 In this case, `$DAPP_ADDRESS`, which is also the Rollups address, is the *spender*;
 - `$AMOUNT` is the amount of tokens to be requested in the allowance;
-- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml);
+- `$RPC_URL` is the URL of the RPC endpoint to be used;
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
 
@@ -146,7 +144,7 @@ cast send 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d \
     "increaseAllowance(address,uint256)" \
         0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40 \
         100000000000000000000 \
-    --rpc-url localhost \
+    --rpc-url http://localhost:8545 \
     --from 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 ```
 
@@ -165,7 +163,7 @@ cast send $ERC20_PORTAL_ADDRESS \
         $DAPP_ADDRESS \
         $AMOUNT \
         0x00 \
-    --rpc-url $NETWORK \
+    --rpc-url $RPC_URL \
     --from $SIGNER_ADDRESS \
     --private-key $PRIVATE_KEY
 ```
@@ -178,7 +176,7 @@ It accepts any value, as long as properly ABI-encoded;
 - `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
 - `$AMOUNT` is the amount of `$ERC20_ADDRESS` to be deposited;
 - `0x00` is a dummy value passed as parameter `bytes`, which corresponds to additional (layer-2) data to be parsed by the DApp;
-- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml);
+- `$RPC_URL` is the URL of the RPC endpoint to be used;
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
 
@@ -193,7 +191,7 @@ cast send 0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40 \
         0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2 \
         100000000000000000000 \
         0x00 \
-    --rpc-url localhost \
+    --rpc-url http://localhost:8545 \
     --from 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 ```
 
@@ -224,14 +222,14 @@ To check the layer-1 balance of any account address, including the DApp itself, 
 cast call $ERC20_ADDRESS \
     "balanceOf(address)" \
         $ACCOUNT_ADDRESS \
-    --rpc-url $NETWORK
+    --rpc-url $RPC_URL
 ```
 
 Where:
 
 - `$ERC20_ADDRESS` is the hex representation of the address of the ERC-20 contract to be used; and
 - `$ACCOUNT_ADDRESS` is the hex representation of the account address to be checked;
-- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml).
+- `$RPC_URL` is the URL of the RPC endpoint to be used.
 
 The call above will return an hex representation of the balance.
 
@@ -241,7 +239,7 @@ For example, in a local environment, the DApp balance for `SimpleERC20` may be r
 cast call 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d \
     "balanceOf(address)" \
         0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2 \
-    --rpc-url localhost
+    --rpc-url http://localhost:8545
 ```
 
 ### Withdrawing the pot
@@ -255,7 +253,7 @@ cast send $INPUT_BOX_ADDRESS \
         0x00 \
     --from $SIGNER_ADDRESS \
     --private-key $PRIVATE_KEY \
-    --rpc-url $NETWORK
+    --rpc-url $RPC_URL
 ```
 
 Where:
@@ -264,7 +262,7 @@ Where:
 - `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the withdrawal request;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key to associated to `$SIGNER_ADDRESS`.
-- `$NETWORK` is the name of the *network* to be used, as defined at [`foundry.toml`](./foundry.toml).
+- `$RPC_URL` is the URL of the RPC endpoint to be used.
 
 As repeatedly stated throughout this document, only withdrawal requests coming from the predefined *withdrawal address* will be fulfilled by the Honeypot DApp.
 
@@ -279,8 +277,8 @@ cast send 0x5a723220579C0DCb8C9253E6b4c62e572E379945 \
     "addInput(address,bytes)" \
         0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2 \
         0x00 \
-    --rpc-url localhost \
-    --from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+    --from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+    --rpc-url http://localhost:8545
 ```
 
 ## Deploying the DApp
