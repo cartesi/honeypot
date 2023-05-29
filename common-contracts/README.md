@@ -27,10 +27,10 @@ As a first step, set a 12-word mnemonic phrase:
 export MNEMONIC=<12-word backup phrase>
 ```
 
-Then, in the case of deployments to Ethereum networks, which are done via Alchemy, set an Alchemy user API key:
+Then, in the case of deployments to Ethereum networks, set an Infura project ID:
 
 ```shell
-export API_KEY=<user API key>
+export PROJECT_ID=<Infura project ID>
 ```
 
 Finally, execute:
