@@ -376,16 +376,6 @@ docker compose \
     up
 ```
 
-Alternatively, you can also run the node on host mode by executing:
-
-```shell
-docker compose \
-    --env-file env.$NETWORK \
-    -f docker-compose-testnet.yml \
-    -f docker-compose-host-testnet.yml \
-    up
-```
-
 ### Interacting with a deployed DApp
 
 In order to interact with a deployed DApp, retrieve the addresses of contracts `InputBox` and `ERC20Portal` for the associated network from the [`@cartesi/rollups` npm package](https://www.npmjs.com/package/@cartesi/rollups).
