@@ -278,6 +278,7 @@ const _hardhatEvmMine = async (): Promise<void> => {
 
 export const inspect = async (query: string): Promise<string> => {
     const url = path.join(CONFIG.inspectServer, query);
+    logger.verbose(`HTTP GET ${url}`);
     const response = await fetch(url);
 
     logger.verbose(`HTTP status: ${response.status}`);

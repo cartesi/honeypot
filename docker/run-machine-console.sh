@@ -29,10 +29,10 @@ while [ $# -gt 0 ]; do
 done
 
 cartesi-machine \
-    --ram-length=128Mi \
+    --ram-length=64Mi \
     --rollup \
-    --flash-drive=label:dapp,filename:dapp.ext2 \
-    --flash-drive=label:root,filename:rootfs.ext2 \
+    --flash-drive=label:root,filename:dapp.ext2 \
+    --flash-drive=label:honeypot_dapp_state,length:4096 \
     --ram-image=linux.bin \
     --rom-image=rom.bin \
     -i $CM_OPTS \

@@ -1,24 +1,34 @@
+# (c) Cartesi and individual authors (see https://github.com/cartesi/honeypot/blob/main/AUTHORS)
+# SPDX-License-Identifier: Apache-2.0 (see https://github.com/cartesi/honeypot/blob/main/LICENSE)
 # Copyright Cartesi Pte. Ltd.
-#
-# SPDX-License-Identifier: Apache-2.0
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-# this file except in compliance with the License. You may obtain a copy of the
-# License at http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software distributed
-# under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-# CONDITIONS OF ANY KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations under the License.
 
-CXX  := riscv64-cartesi-linux-gnu-g++
+CXX  := g++
+
+CXXFLAGS := \
+	-std=c++17 \
+	-O1 \
+	-fno-exceptions \
+	-fno-rtti \
+	-fno-strict-aliasing \
+	-fno-strict-overflow \
+	-fstack-protector-strong \
+	-D_FORTIFY_SOURCE=2 \
+	-D_GLIBCXX_ASSERTIONS \
+	-Wall \
+	-Wextra \
+	-Werror \
+	-Wformat -Werror=format-security
+INCS := -Iconfig/$(NETWORK) -I/opt/riscv/kernel/work/linux-headers/include
+LDFLAGS := -Wl,-O1,--sort-common,-z,relro,-z,now,--as-needed
+
 
 .PHONY: clean
 
 honeypot: honeypot.cpp
-	$(CXX) -std=c++17 -Wall -Werror \
-		-Iboost_1_73_0 \
-		-Iconfig/$(NETWORK) \
-		-o $@ $^
+	$(CXX) $(CXXFLAGS) $(INCS) $(LDFLAGS) -o $@ $^
+
+lint: honeypot.cpp
+	clang-tidy honeypot.cpp -- $(CXXFLAGS) $(INCS)
 
 clean:
 	@rm -rf honeypot

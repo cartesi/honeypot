@@ -19,6 +19,7 @@ import {
     TestOptions,
     INPUT_ADDED_EVENT_HASH,
 } from "./util";
+import { log } from "console";
 
 const CONFIG = getTestOptions();
 
@@ -97,12 +98,14 @@ export const getErc20Balance = async (
     const io = await spawnAsync(cmd, args, {});
 
     let balanceStr: string = io.stdout.substring(0, io.stdout.length - 1);
+    logger.verbose(`getERC20Balance >> ${balanceStr}`)
     return ethers.BigNumber.from(balanceStr.replace("\n", ""));
 };
 
 const castSend = async (
     signerAddress: string,
-    functionArgs: string[]
+    privateKey: string,
+    functionArgs: string[],
 ): Promise<CommandOutput> => {
     const cmd = "cast";
     const args = [
@@ -112,6 +115,8 @@ const castSend = async (
         CONFIG.castRpcEndpoint,
         "--from",
         signerAddress,
+        "--private-key",
+        privateKey,
         "--json",
     ];
 
@@ -128,6 +133,7 @@ const castSend = async (
  */
 export const sendInput = async (
     signerAddress: string,
+    privateKey: string,
     payload: string
 ): Promise<number> => {
     let hexPayload: string = ethers.utils.hexlify(
@@ -141,7 +147,7 @@ export const sendInput = async (
         hexPayload,
     ];
 
-    const tx = await castSend(signerAddress, functionArgs);
+    const tx = await castSend(signerAddress,privateKey, functionArgs);
     return filterInputIndex(JSON.parse(tx.stdout));
 };
 
@@ -150,6 +156,7 @@ export const sendInput = async (
  */
 export const increaseAllowance = async (
     signerAddress: string,
+    privateKey:string,
     amount: ethers.BigNumber
 ): Promise<void> => {
     const functionArgs: string[] = [
@@ -157,10 +164,10 @@ export const increaseAllowance = async (
         "increaseAllowance(address,uint256)",
         CONFIG.erc20PortalAddress,
         amount.toString(),
-        "0x00",
+        "",
     ];
 
-    const tx = await castSend(signerAddress, functionArgs);
+    const tx = await castSend(signerAddress,privateKey, functionArgs);
     return;
 };
 
@@ -169,7 +176,9 @@ export const increaseAllowance = async (
  */
 export const erc20Deposit = async (
     signerAddress: string,
-    amount: ethers.BigNumber
+    privateKey:string,
+    amount: ethers.BigNumber,
+    data?: string
 ): Promise<number> => {
     const functionArgs: string[] = [
         CONFIG.erc20PortalAddress,
@@ -177,10 +186,10 @@ export const erc20Deposit = async (
         CONFIG.erc20Address,
         CONFIG.dappAddress,
         amount.toString(),
-        "0x00",
+        data ?? "",
     ];
 
-    const tx = await castSend(signerAddress, functionArgs);
+    const tx = await castSend(signerAddress,privateKey, functionArgs);
     return filterInputIndex(JSON.parse(tx.stdout));
 };
 
@@ -188,7 +197,8 @@ export const erc20Deposit = async (
  * Deposit ETH
  */
 export const ethDeposit = async (
-    accountIndex: string,
+    signerAddress: string,
+    privateKey: string,
     amount: ethers.BigNumber,
     l2Data: string
 ): Promise<number> => {
@@ -200,6 +210,6 @@ export const ethDeposit = async (
         amount.toString(),
     ];
 
-    const tx = await castSend(accountIndex, functionArgs);
+    const tx = await castSend(signerAddress,privateKey,functionArgs);
     return filterInputIndex(JSON.parse(tx.stdout));
 };

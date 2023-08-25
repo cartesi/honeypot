@@ -11,8 +11,15 @@
         "prebuild": "run-p grpc:codegen graphql:codegen",
         "build": "tsc",
         "mocha": "wrap () { mocha -r ts-node/register honeypot.test.ts -t 3m -b --serverManagerAddress 0.0.0.0:5001 $* ; }; wrap",
-        "test": "wrap () { yarn mocha $* ;}; wrap",
-        "prettier": "prettier -w \"**/*.ts\""
+        "prettier": "prettier -w \"**/*.ts\"",
+        "buildImages": "wrap () { cd .. && docker buildx bake && cd tests/ ;}; wrap",
+        "startEnvironment": "wrap(){ cd .. && docker compose up -d && cd tests/ ;}; wrap",
+        "stopEnvironment": "wrap(){ cd .. && docker compose down -v ; }; wrap",
+        "test:ci": "wrap () { yarn startEnvironment && export DAPP_ADDRESS=$(cat ../deployments/localhost/dapp.json | jq -r '.address') && export INPUT_BOX_ADDRESS=$(cat ../deployments/localhost/InputBox.json | jq -r '.address') && export ERC20_PORTAL_ADDRESS=$(cat ../deployments/localhost/ERC20Portal.json | jq -r '.address') && export ERC20_ADDRESS=$(cat ../common-contracts/deployments/localhost/SimpleERC20.json | jq -r '.address') && yarn build && yarn mocha --dappAddress $DAPP_ADDRESS --inputBoxAddress $INPUT_BOX_ADDRESS --erc20PortalAddress $ERC20_PORTAL_ADDRESS --erc20Address $ERC20_ADDRESS $*  ; }; wrap",
+        "test:prod": "wrap () { yarn buildImages $1 && yarn startEnvironment && export DAPP_ADDRESS=$(cat ../deployments/localhost/dapp.json | jq -r '.address') && export INPUT_BOX_ADDRESS=$(cat ../deployments/localhost/InputBox.json | jq -r '.address') && export ERC20_PORTAL_ADDRESS=$(cat ../deployments/localhost/ERC20Portal.json | jq -r '.address') && export ERC20_ADDRESS=$(cat ../common-contracts/deployments/localhost/SimpleERC20.json | jq -r '.address') && yarn build && yarn mocha --dappAddress $DAPP_ADDRESS --inputBoxAddress $INPUT_BOX_ADDRESS --erc20PortalAddress $ERC20_PORTAL_ADDRESS --erc20Address $ERC20_ADDRESS $*  ;}; wrap",
+        "test": "wrap () { yarn test:prod $* ;}; wrap",
+        "posttest:prod": "wrap(){ yarn stopEnvironment ; };wrap",
+        "saveLogs": "saveLogs () { mkdir -p logs && cd .. && docker compose logs --timestamps --no-log-prefix --no-color $1 > ./tests/logs/$1.log; }; saveLogs"
     },
     "devDependencies": {
         "@graphql-codegen/cli": "^2.16.4",
