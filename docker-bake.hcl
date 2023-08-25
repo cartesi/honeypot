@@ -8,26 +8,24 @@ variable "DOCKER_ORGANIZATION" {
 }
 
 group "default" {
-  targets = ["dapp", "server", "console"]
+  targets = ["server", "console"]
 }
 
-target "local-deployments" {
-  context = "./docker"
-  target = "local-deployments-stage"
-}
 
-target "deployments" {
+
+target "wrapped" {
   context = "./docker"
-  target = "deployments-stage"
+  target = "wrapped-stage"
+  contexts = {
+    dapp = "target:dapp"
+  }
 }
 
 target "fs" {
   context = "./docker"
   target  = "fs-stage"
   contexts = {
-    dapp = "target:dapp"
-    deployments = "target:deployments"
-    local-deployments = "target:local-deployments"
+    wrapped = "target:wrapped"
   }
 }
 
@@ -37,7 +35,7 @@ target "server" {
   contexts = {
     fs = "target:fs"
   }
-  tags = ["${DOCKER_ORGANIZATION}/dapp:honeypot-${TAG}-server"]
+  tags = ["${DOCKER_ORGANIZATION}/honeypot:${TAG}-server"]
 }
 
 target "console" {
@@ -46,16 +44,16 @@ target "console" {
   contexts = {
     fs = "target:fs"
   }
-  tags = ["${DOCKER_ORGANIZATION}/dapp:honeypot-${TAG}-console"]
+  tags = ["${DOCKER_ORGANIZATION}/honeypot:${TAG}-console"]
 }
 
 target "machine" {
   context = "./docker"
   target  = "machine-stage"
-  contexts = {
-    server = "target:server"
+   contexts = {
+    fs = "target:fs"
   }
-  tags = ["${DOCKER_ORGANIZATION}/dapp:honeypot-${TAG}-machine"]
+  tags = ["${DOCKER_ORGANIZATION}/honeypot:${TAG}-machine"]
 }
 
 target "dapp" {

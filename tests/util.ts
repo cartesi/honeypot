@@ -121,20 +121,20 @@ let testOptions: TestOptions = {
     logLevel: LogLevel.DEFAULT,
     pollingLimit: 60,
     serverManagerAddress: "",
-    dappAddress: "0x142105FC8dA71191b3a13C738Ba0cF4BC33325e2",
-    inputBoxAddress: "0x5a723220579C0DCb8C9253E6b4c62e572E379945",
-    erc20PortalAddress: "0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40",
-    erc20Address: "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+    dappAddress: "0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C",
+    inputBoxAddress: "0x59b22D57D4f067708AB0c00552767405926dc768",
+    erc20PortalAddress: "0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB",
+    erc20Address: "0x291a575C83aBcBF92Cae9c611f83416F2e17071B",
     castRpcEndpoint: "http://localhost:8545",
     graphQLServer: "http://localhost:4000/graphql",
-    inspectServer: "http://localhost:5005/inspect",
+    inspectServer: "http://localhost:5005/inspect/",
 };
 
 const captureStringArg = (argv: string[], argName: string): string => {
     let index = argv.indexOf(argName);
     if (index >= 0) {
         try {
-            console.log(argv[index + 1]);
+            console.log(`${argName} : ${argv[index + 1]}`);
             return argv[index + 1].toLowerCase();
         } catch (error) {
             throw new Error(`Failed to parse arguments. ${error}`);

@@ -1,12 +1,26 @@
 # syntax=docker.io/docker/dockerfile:1.4
-# The rootfs image MUST be built with support to boost
-FROM cartesi/rootfs:0.17.0 as dapp-build
+FROM --platform=linux/riscv64 riscv64/ubuntu:22.04 as builder
+ENV SOURCE_DATE_EPOCH=1692902406
+RUN <<EOF
+apt-get update
+apt-get install -y --no-install-recommends \
+    build-essential=12.9ubuntu3 \
+    clang-tidy=1:14.0-55~exp2
+rm -rf /var/lib/apt/lists/*
+EOF
+
 ARG NETWORK=localhost
 
-WORKDIR /opt/cartesi/dapp
+ADD https://github.com/cartesi/image-kernel/releases/download/v0.16.0/linux-headers-5.15.63-ctsi-2.tar.xz /
+RUN tar -xf linux-headers-5.15.63-ctsi-2.tar.xz
+WORKDIR /home/dapp
 COPY . .
+RUN make lint
+RUN make
 
-RUN wget https://sourceforge.net/projects/boost/files/boost/1.73.0/boost_1_73_0.zip
-RUN unzip -u boost_1_73_0.zip
 
-RUN make NETWORK=$NETWORK
+
+FROM --platform=linux/riscv64 riscv64/ubuntu:22.04 as dapp
+
+WORKDIR /home/dapp
+COPY --from=builder /home/dapp/honeypot .

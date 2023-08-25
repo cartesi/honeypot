@@ -32,14 +32,19 @@ const PROJECT_NAME = require("project-name");
 const SERVER_MANAGER_PROTO = "./grpc-interfaces/server-manager.proto";
 
 const ALICE_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+const ALICE_PRIVATE_KEY = ethers.Wallet.fromMnemonic("test test test test test test test test test test test junk").privateKey;
 const BOB_ADDRESS = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+const BOB_PRIVATE_KEY = ethers.Wallet.fromMnemonic("test test test test test test test test test test test junk","m/44'/60'/0'/0/1").privateKey;
 
 // Honeypot DApp operation/error codes
 enum OP {
-    DEPOSIT_PROCESSED = "0x00",
-    VOUCHER_ISSUED = "0x01",
-    NO_FUNDS = "0x02",
-    INVALID_INPUT = "0x03",
+    OK = 0x00,
+    DEPOSIT_TRANSFER_FAILED = 0x01,
+    DEPOSIT_INVALID_CONTRACT = 0x02,
+    DEPOSIT_BALANCE_OVERFLOW = 0x03,
+    WITHDRAW_NO_FUNDS = 0x04,
+    WITHDRAW_VOUCHER_FAILED = 0x05,
+    INVALID_ADVANCE_REQUEST = 0xFF
 }
 
 let serverManager: PollingServerManagerClient;
@@ -69,43 +74,52 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
             "100000000000000000000"
         );
 
+        logger.verbose("> Retrieve Balances")
         const initialBobBalance = await cast.getErc20Balance(BOB_ADDRESS);
         let dappBalance: ethers.BigNumber = ethers.BigNumber.from(
-            await inspect("0x00")
+            await inspect("")
         );
         let expectedDappBalance: ethers.BigNumber = dappBalance.add(AMOUNT);
         logger.verbose("> Balances retrieved");
         logger.verbose("> Bob's   : " + initialBobBalance);
         logger.verbose("> Pot size: " + dappBalance);
 
-        await cast.increaseAllowance(ALICE_ADDRESS, AMOUNT);
+        logger.verbose("> Increase allowance");
+        await cast.increaseAllowance(ALICE_ADDRESS,ALICE_PRIVATE_KEY, AMOUNT);
         logger.verbose("> Allowance increased");
 
-        let inputIndex: number = await cast.erc20Deposit(ALICE_ADDRESS, AMOUNT);
+        logger.verbose("> Alice deposit")
+        let inputIndex: number = await cast.erc20Deposit(ALICE_ADDRESS,ALICE_PRIVATE_KEY, AMOUNT);
         logger.verbose("> Input index: " + inputIndex);
         logger.verbose("> Deposit performed");
         logger.verbose("> Amount: " + AMOUNT);
 
+        logger.verbose(`Check Alice deposit`);
         let reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
-        let reportPayload: string = hex2str(reports[0].payload);
-        expect(reportPayload.startsWith(OP.DEPOSIT_PROCESSED));
-        logger.verbose("> Report retrieved");
+        let reportPayload: string = reports[0].payload;
+        logger.verbose(`report payload : ${reportPayload}`);
+        expect(Number(reportPayload)).to.eq(OP.OK);
+        logger.verbose("> Alice deposit is ok");
 
-        dappBalance = ethers.BigNumber.from(await inspect("0x00"));
-        expect(dappBalance.eq(expectedDappBalance));
+        logger.verbose("> Inspect balance");
+        dappBalance = ethers.BigNumber.from(await inspect(""));
         logger.verbose("> Pot size: " + dappBalance);
         logger.verbose("> Expected: " + expectedDappBalance);
+        expect(dappBalance.eq(expectedDappBalance));
         logger.verbose("> DApp balance matches expected value");
 
-        inputIndex = await cast.sendInput(BOB_ADDRESS, "0x00");
+        logger.verbose("> Bob withdrawal")
+        inputIndex = await cast.sendInput(BOB_ADDRESS,BOB_PRIVATE_KEY, "");
         logger.verbose("> Input index: " + inputIndex);
 
+        logger.verbose("> Check Bob withdrawal")
         reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
-        reportPayload = hex2str(reports[0].payload);
-        expect(reportPayload.startsWith(OP.VOUCHER_ISSUED));
-        logger.verbose("> Voucher issued");
+        reportPayload = reports[0].payload;
+        logger.verbose(`report payload : ${reportPayload}`);
+        expect(Number(reportPayload)).to.eq(OP.OK);
+        logger.verbose("> Voucher was issued");
 
         let vouchers: graphql.PartialVoucher[] = await graphql.getVouchers(
             inputIndex
@@ -120,21 +134,48 @@ describe("Integration Tests for " + PROJECT_NAME(), () => {
         let dappBalance = await cast.getErc20Balance(testConfig.dappAddress);
         expect(dappBalance.eq(0));
 
-        let inputIndex: number = await cast.sendInput(BOB_ADDRESS, "0x00");
+        let inputIndex: number = await cast.sendInput(BOB_ADDRESS,BOB_PRIVATE_KEY, "");
         const reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
 
-        const reportPayload: string = hex2str(reports[0].payload);
-        expect(reportPayload.startsWith(OP.NO_FUNDS));
+        const reportPayload: string = reports[0].payload;
+        expect(Number(reportPayload)).to.eq(OP.WITHDRAW_NO_FUNDS);
+    });
+
+    it("Withdraw request with a payload is rejected", async () => {
+        
+        let inputIndex: number = await cast.sendInput(BOB_ADDRESS,BOB_PRIVATE_KEY, "0x00");
+        const reports = await graphql.getReports(inputIndex);
+        expect(reports.length).to.eq(1);
+
+        const reportPayload: string = reports[0].payload;
+        expect(Number(reportPayload)).to.eq(OP.INVALID_ADVANCE_REQUEST);
+    });
+
+    it("Deposit with a payload is rejected", async () => {
+        const AMOUNT: ethers.BigNumber = ethers.BigNumber.from(
+            "100000000000000000000"
+        );
+
+        logger.verbose("> Increase allowance");
+        await cast.increaseAllowance(ALICE_ADDRESS,ALICE_PRIVATE_KEY, AMOUNT);
+        logger.verbose("> Allowance increased");
+
+        let inputIndex: number = await cast.erc20Deposit(ALICE_ADDRESS,ALICE_PRIVATE_KEY, AMOUNT,"0x00");
+        const reports = await graphql.getReports(inputIndex);
+        expect(reports.length).to.eq(1);
+
+        const reportPayload: string = reports[0].payload;
+        expect(Number(reportPayload)).to.eq(OP.INVALID_ADVANCE_REQUEST);
     });
 
     it("Withdraw request from wrong msg_sender is rejected", async () => {
-        let inputIndex: number = await cast.sendInput(ALICE_ADDRESS, "0x00");
+        let inputIndex: number = await cast.sendInput(ALICE_ADDRESS,ALICE_PRIVATE_KEY, "");
         logger.verbose("> Input index: " + inputIndex);
 
         const reports = await graphql.getReports(inputIndex);
         expect(reports.length).to.eq(1);
-        const reportPayload: string = hex2str(reports[0].payload);
-        expect(reportPayload.startsWith(OP.INVALID_INPUT));
+        const reportPayload: string = reports[0].payload;
+        expect(Number(reportPayload)).to.eq(OP.INVALID_ADVANCE_REQUEST);
     });
 });

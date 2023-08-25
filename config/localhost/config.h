@@ -1,40 +1,19 @@
-// Copyright 2023 Cartesi Pte. Ltd.
-//
-// SPDX-License-Identifier: Apache-2.0
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-// this file except in compliance with the License. You may obtain a copy of the
-// License at http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software distributed
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
+// (c) Cartesi and individual authors (see https://github.com/cartesi/honeypot/blob/main/AUTHORS)
+// SPDX-License-Identifier: Apache-2.0 (see https://github.com/cartesi/honeypot/blob/main/LICENSE)
+// Copyright Cartesi Pte. Ltd.
 
 #ifndef __CONFIG_H_
 #define __CONFIG_H_
 
-// Byte representation of the address of the ERC-20 Portal,
-// 0x4340ac4FcdFC5eF8d34930C96BBac2Af1301DF40
-const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
-ERC20_PORTAL_ADDRESS = {
-    67, 64, 172, 79, 205, 252, 94, 248, 211, 73,
-    48, 201, 107, 186, 194, 175, 19, 1, 223, 64
-};
+                                         
+// 0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB                                         
+#define CONFIG_ERC20_PORTAL_ADDRESS     {0x9C,0x21,0xAE,0xb2,0x09,0x3C,0x32,0xDD,0xbC,0x53,0xeE,0xF2,0x4B,0x87,0x3B,0xDC,0xd1,0xaD,0xa1,0xDB}
+// 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+#define CONFIG_ERC20_WITHDRAWAL_ADDRESS {0x70,0x99,0x79,0x70,0xC5,0x18,0x12,0xdc,0x3A,0x01,0x0C,0x7d,0x01,0xb5,0x0e,0x0d,0x17,0xdc,0x79,0xC8}
+// 0x291a575C83aBcBF92Cae9c611f83416F2e17071B
+#define CONFIG_ERC20_CONTRACT_ADDRESS   {0x29,0x1a,0x57,0x5C,0x83,0xaB,0xcB,0xF9,0x2C,0xae,0x9c,0x61,0x1f,0x83,0x41,0x6F,0x2e,0x17,0x07,0x1B}
 
-// Byte representation of the ONLY ERC-20 contract address accepted by the DApp,
-// 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d
-const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
-ERC20_CONTRACT_ADDRESS = {
-    198, 231, 223, 94, 123, 79, 42, 39, 137, 6,
-    134, 43, 97, 32, 88, 80, 52, 77, 78, 125
-};
 
-// Byte representation of the withdrawal address (Bob's),
-// 0x70997970C51812dc3A010C7d01b50e0d17dc79C8, which
-// corresponds to account index 1
-const std::array<uint8_t,CARTESI_ROLLUP_ADDRESS_SIZE>
-WITHDRAWAL_ADDRESS = {
-    112, 153, 121, 112, 197, 24, 18, 220, 58, 1,
-    12, 125, 1, 181, 14, 13, 23, 220, 121, 200
-};
+
+
 #endif

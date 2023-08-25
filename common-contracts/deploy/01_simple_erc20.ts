@@ -20,6 +20,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const opts: DeployOptions = {
         from: deployer,
         log: true,
+        deterministicDeployment: true,
     };
 
     await deployments.deploy("SimpleERC20", {

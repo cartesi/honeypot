@@ -1,0 +1,84 @@
+# yaml-language-server: =https://json.schemastore.org/github-workflow.json
+---
+name: "Build Honeypot DApp"
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - "docker/**"
+            - "config/**"
+            - "docker-compose*.yml"
+            - "docker-bake.hcl"
+            - ".github/workflows/dapp-build.yml"
+            - ".github/workflows/honeypot-dapp.yml"
+            - "!**/*.md"
+            - "**/*.*"
+            - "tests/**"
+    push:
+        tags:
+            - v*
+        branches:
+            - develop
+            - adapt-robust-version
+permissions:
+    contents: read
+    packages: write
+    actions: write
+jobs:
+    build:
+        uses: ./.github/workflows/dapp-build.yml
+        secrets: inherit
+    test:
+        needs: build
+        runs-on: ubuntu-20.04
+        steps:
+            - name: "Checkout"
+              uses: actions/checkout@v3
+              with:
+                  submodules: recursive
+                  
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+
+            - name: Login to GitHub Container Registry
+              uses: docker/login-action@v2
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Run tests
+              env:
+                  DAPP_IMAGE: ${{ needs.build.outputs.dapp-image }}
+              run: |
+                  yarn install
+                  yarn test:ci  --verbose
+              working-directory: ./tests
+
+            - name: Save docker logs
+              if: always()
+              run: |
+                  yarn saveLogs hardhat
+                  yarn saveLogs dispatcher
+                  yarn saveLogs state_server
+                  yarn saveLogs server_manager
+                  yarn saveLogs inspect_server
+                  yarn saveLogs indexer
+                  yarn saveLogs graphql_server
+                  yarn saveLogs database
+                  yarn saveLogs advance_runner
+                  yarn saveLogs common-contracts
+              working-directory: tests
+
+            - name: Upload docker logs
+              if: always()
+              uses: actions/upload-artifact@master
+              with:
+                  name: honeypot-logs
+                  path: ./tests/logs/
