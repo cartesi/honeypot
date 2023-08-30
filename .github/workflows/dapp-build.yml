@@ -3,6 +3,10 @@
 name: "DApp Build"
 on:
     workflow_call:
+        inputs:
+            network:
+                required: true
+                type: string
         outputs:
             dapp-image:
                 description: "The DApp built container image"
@@ -37,9 +41,9 @@ jobs:
                       name=ghcr.io/cartesi/honeypot
                       name=docker.io/cartesi/honeypot,enable=${{ github.event_name != 'pull_request' }}
                   tags: |
-                      type=semver,pattern={{version}},suffix=-server
-                      type=ref,event=branch,pattern={{branch}},suffix=-server
-                      type=ref,event=pr,pattern=${{ github.event.number }},suffix=-server
+                      type=semver,pattern={{version}},suffix=-server-${{inputs.network}}
+                      type=ref,event=branch,pattern={{branch}},suffix=-server-${{inputs.network}}
+                      type=ref,event=pr,pattern=${{ github.event.number }},suffix=-server-${{inputs.network}}
                   flavor: latest=false
 
             - name: Set dapp-image
@@ -74,3 +78,4 @@ jobs:
                   set: |
                       *.cache-from=type=gha
                       *.cache-to=type=gha,mode=max
+                      *.args.NETWORK=${{inputs.network}}
