@@ -23,14 +23,15 @@ Additionaly, an external tool is suggested to act as a front-end to send request
 The application comes configured to be run in a local environment by default.
 Such configuration is available at [config/localhost/config.h](./config/localhost/config.h), which defines:
 
-- `ERC20_CONTRACT_ADDRESS`: byte representation of the address of the only ERC-20 contract accepted for deposits.
+- `CONFIG_ERC20_PORTAL_ADDRESS`: byte representation of the address of the ERC-20 portal;
+- `CONFIG_ERC20_CONTRACT_ADDRESS`: byte representation of the address of the only ERC-20 contract accepted for deposits;
 In this case, it corresponds to `0x291a575C83aBcBF92Cae9c611f83416F2e17071B`, which refers to `SimpleERC20`, the contract deployed locally via the [`common-contracts` container](./common-contracts/README.md).
-- `WITHDRAWAL_ADDRESS`: byte representation of the only *withdrawal address* allowed.
+- `CONFIG_ERC20_WITHDRAWAL_ADDRESS`: byte representation of the only *withdrawal address* allowed.
 In this case, it corresponds to `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (account index `1` in the local Hardhat node).
 
 ### Customizing the DApp for other networks
 
-In order to configure the DApp for a network other than `localhost`, one needs to create a new configuration file (`config.h`) and place it in a separate directory, setting proper values for `ERC20_CONTRACT_ADDRESS` and `WITHDRAWAL_ADDRESS`.
+In order to configure the DApp for a network other than `localhost`, one needs to create a new configuration file (`config.h`) and place it in a separate directory.
 
 For example, for the Sepolia network, the file structure would be:
 
@@ -40,7 +41,7 @@ config/
     └── config.h
 ```
 
-> A sample `SimpleERC20` has already been deployed to Sepolia at `0xa46e0A31a1c248160aCBa9dD354c72E52C92c9f2`.
+File `config.h` must contain proper values for `CONFIG_ERC20_PORTAL_ADDRESS`, `CONFIG_ERC20_CONTRACT_ADDRESS`, and `CONFIG_ERC20_WITHDRAWAL_ADDRESS`.
 
 ## Building the application
 
@@ -53,7 +54,7 @@ docker buildx bake \
 
 ### Building for other networks
 
-In order to build the DApp for another network, simply override build argument `NETWORK`, which defaults to `localhost`, by setting a value to `*.args.NETWORK`, so the [configuration file related to the selected network](#customizing-the-dapp-for-other-networks) is included during the build process (see [`Makefile`](./Makefile)).
+In order to build the DApp for another network, simply override build argument `NETWORK`, which defaults to `localhost`, by setting a value for `*.args.NETWORK`, so the [configuration file related to the selected network](#customizing-the-dapp-for-other-networks) is included during the build process (see [`Makefile`](./Makefile)).
 
 For example, assuming there's a valid configuration file for the Sepolia network, set `*.args.NETWORK` to `sepolia` during the build as follows:
 
@@ -79,7 +80,7 @@ On the other hand, to bring the DApp down along with its volumes, run the follow
 docker compose down -v
 ```
 
-Notice that when running locally, the chain used is [Hardhat](https://hardhat.org/). Due to a [bug](https://github.com/NomicFoundation/hardhat/issues/2053) in thi chain, it is nromal to see the following warning at the logs. Do not bother, it is not a problem.
+Notice that when running locally, the chain used is [Hardhat](https://hardhat.org/). Due to a [bug](https://github.com/NomicFoundation/hardhat/issues/2053) in this chain, it is normal to see the following warning in the logs. Do not bother, it is not a problem.
 
 ```shell
 WARN background_process: eth_block_history::block_subscriber: `listen_and_broadcast` error `New block subscriber timeout: timed out`, retrying subscription
@@ -143,7 +144,7 @@ In this case, `$DAPP_ADDRESS`, which is also the Rollups address, is the *spende
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
 
-For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) (`0x291a575C83aBcBF92Cae9c611f83416F2e17071B`) as the ERC-20 contract would look like this:
+For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local Hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) (`0x291a575C83aBcBF92Cae9c611f83416F2e17071B`) as the ERC-20 contract would look like this:
 
 ```shell
 cast send 0x291a575C83aBcBF92Cae9c611f83416F2e17071B \
@@ -209,7 +210,7 @@ The pot balance may be retrieved at all times by sending an [inspect-state reque
 curl localhost:5005/inspect/
 ```
 
-The response from such request will contain the amount of tokens held at layer-2, which constitutes the pot balance.
+The response from such a request will contain the amount of tokens held at layer-2, which constitutes the pot balance.
 Here's a sample response from the DApp:
 
 ```shell
@@ -218,7 +219,7 @@ Here's a sample response from the DApp:
 }
 ```
 
-Notice the pot balance may differ over time from the actual ERC-20 balance held by the DApp at layer-1 due to withdrawal requests not being performed.
+Notice that the pot balance may differ over time from the actual ERC-20 balance held by the DApp on layer-1. This is because when a withdrawal request is processed by the DApp, a corresponding voucher is emitted and the pot balance on layer-2 changes immediately. However, the DApp's ERC-20 balance on layer-1 will only change when that voucher is finalized and executed on layer-1.
 
 #### Retrieving layer-1 balances
 
@@ -250,7 +251,7 @@ cast call 0x291a575C83aBcBF92Cae9c611f83416F2e17071B \
 
 ### Withdrawing the pot
 
-In order to perform a withdrawal request, just send any input (`0x00`, in the example below) to the DApp as follows:
+In order to perform a withdrawal request, just send an empty input (`""`, in the example below) to the DApp as follows:
 
 ```shell
 cast send $INPUT_BOX_ADDRESS \
@@ -266,6 +267,7 @@ Where:
 
 - `$INPUT_BOX_ADDRESS` is the hex representation of the InputBox address, as explained in [Gathering DApp data](#gathering-dapp-data);
 - `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
+- `""` is the actual input;
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the withdrawal request;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key to associated to `$SIGNER_ADDRESS`.
 - `$RPC_URL` is the URL of the RPC endpoint to be used.
@@ -289,7 +291,7 @@ cast send 0x59b22D57D4f067708AB0c00552767405926dc768 \
 
 ## Deploying the DApp
 
-Deploying a new Cartesi DApp to a blockchain requires creating a smart contract on that network, as well as running a validator node for the DApp.
+Deploying a new Cartesi DApp to a blockchain requires creating a smart contract on that network, as well as running a Cartesi Validator Node for the DApp.
 
 The first step is to build the DApp's back-end machine, which will produce a hash that serves as a unique identifier.
 
@@ -312,7 +314,7 @@ docker buildx bake \
 ```
 
 Once the machine docker image is ready, it may be used to deploy a corresponding Rollups smart contract.
-This requires you to specify the account and RPC gateway to use when submitting the deploy transaction on the target network, which can be done by defining the following environment variables:
+This requires you to specify the account and RPC gateway to be used when submitting the deploy transaction on the target network, which can be done by defining the following environment variables:
 
 ```shell
 export MNEMONIC=<user sequence of twelve words>
@@ -398,8 +400,9 @@ With such configuration in place, one can interact with the DApp as explained at
 
 ## Integration Tests
 
-The integration tests are a set of tests meant to be executed on top of Honeypot DApp. They use [Foundry Cast](https://github.com/foundry-rs/foundry) to interact with the DApps.
+This repository comes with a set of integration tests meant to be executed on top of Honeypot DApp.
 
-The tests are written in Typescript and are based on frameworks [Mocha](https://mochajs.org/) and [Chai](https://www.chaijs.com/api/).
+The tests are written in Typescript and use frameworks [Mocha](https://mochajs.org/) and [Chai](https://www.chaijs.com/api/).
+They also use [Foundry Cast](https://github.com/foundry-rs/foundry) as tool to interact with the DApp.
 
-To run them locally, go to the `tests` directory and proceed as indicated in the [tests README](tests/README.md).
+To run the tests locally, go to the `tests` directory and proceed as indicated in the [tests README](tests/README.md).
