@@ -18,18 +18,27 @@ on:
         tags:
             - v*
         branches:
-            - develop
-            - adapt-robust-version
+            - add-sepolia-mainnet-builds
 permissions:
     contents: read
     packages: write
     actions: write
 jobs:
-    build:
+    build-networks:
+        strategy:
+            matrix: 
+                network: [sepolia, mainnet]
         uses: ./.github/workflows/dapp-build.yml
         secrets: inherit
+        with:
+            network: ${{matrix.network}}
+    build-localhost:
+        uses: ./.github/workflows/dapp-build.yml
+        secrets: inherit
+        with: 
+            network: localhost
     test:
-        needs: build
+        needs: build-localhost
         runs-on: ubuntu-20.04
         steps:
             - name: "Checkout"
@@ -55,7 +64,7 @@ jobs:
 
             - name: Run tests
               env:
-                  DAPP_IMAGE: ${{ needs.build.outputs.dapp-image }}
+                  DAPP_IMAGE: ${{ needs.build-localhost.outputs.dapp-image }}
               run: |
                   yarn install
                   yarn test:ci  --verbose
