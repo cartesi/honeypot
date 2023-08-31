@@ -25,7 +25,7 @@ Such configuration is available at [config/localhost/config.h](./config/localhos
 
 - `CONFIG_ERC20_PORTAL_ADDRESS`: byte representation of the address of the ERC-20 portal;
 - `CONFIG_ERC20_CONTRACT_ADDRESS`: byte representation of the address of the only ERC-20 contract accepted for deposits;
-In this case, it corresponds to `0x291a575C83aBcBF92Cae9c611f83416F2e17071B`, which refers to `SimpleERC20`, the contract deployed locally via the [`common-contracts` container](./common-contracts/README.md).
+In this case, it corresponds to `0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02`, which refers to `SimpleERC20`, the contract deployed locally via the [`common-contracts` container](./common-contracts/README.md).
 - `CONFIG_ERC20_WITHDRAWAL_ADDRESS`: byte representation of the only *withdrawal address* allowed.
 In this case, it corresponds to `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (account index `1` in the local Hardhat node).
 
@@ -113,7 +113,7 @@ The following values are expected for the variables above:
 - `$DAPP_ADDRESS`: `0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C`;
 - `$INPUT_BOX_ADDRESS`: `0x59b22D57D4f067708AB0c00552767405926dc768`;
 - `$ERC20_PORTAL_ADDRESS`: `0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB`;
-- `$ERC20_ADDRESS`: `0x291a575C83aBcBF92Cae9c611f83416F2e17071B`.
+- `$ERC20_ADDRESS`: `0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02`.
 
 ### Depositing funds
 
@@ -144,10 +144,10 @@ In this case, `$DAPP_ADDRESS`, which is also the Rollups address, is the *spende
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
 - `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
 
-For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local Hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) (`0x291a575C83aBcBF92Cae9c611f83416F2e17071B`) as the ERC-20 contract would look like this:
+For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local Hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) (`0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02`) as the ERC-20 contract would look like this:
 
 ```shell
-cast send 0x291a575C83aBcBF92Cae9c611f83416F2e17071B \
+cast send 0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02 \
     "approve(address,uint256)" \
         0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB \
         100000000000000000000 \
@@ -194,7 +194,7 @@ For example, a deposit performed by account `0xf39Fd6e51aad88F6F4ce6aB8827279cff
 ```shell
 cast send 0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB \
     "depositERC20Tokens(address,address,uint256,bytes)" \
-        0x291a575C83aBcBF92Cae9c611f83416F2e17071B \
+        0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02 \
         0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C \
         100000000000000000000 \
         "" \
@@ -243,7 +243,7 @@ The call above will return an hex representation of the balance.
 For example, in a local environment, the DApp balance for `SimpleERC20` may be retrieved as follows:
 
 ```shell
-cast call 0x291a575C83aBcBF92Cae9c611f83416F2e17071B \
+cast call 0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02 \
     "balanceOf(address)" \
         0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C \
     --rpc-url http://localhost:8545
