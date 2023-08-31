@@ -124,7 +124,7 @@ let testOptions: TestOptions = {
     dappAddress: "0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C",
     inputBoxAddress: "0x59b22D57D4f067708AB0c00552767405926dc768",
     erc20PortalAddress: "0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB",
-    erc20Address: "0x291a575C83aBcBF92Cae9c611f83416F2e17071B",
+    erc20Address: "0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02",
     castRpcEndpoint: "http://localhost:8545",
     graphQLServer: "http://localhost:4000/graphql",
     inspectServer: "http://localhost:5005/inspect/",
