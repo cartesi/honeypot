@@ -43,6 +43,8 @@ config/
 
 File `config.h` must contain proper values for `CONFIG_ERC20_PORTAL_ADDRESS`, `CONFIG_ERC20_CONTRACT_ADDRESS`, and `CONFIG_ERC20_WITHDRAWAL_ADDRESS`.
 
+Please refer to [Deploying the DApp](#deploying-the-dapp) for more information about building and deploying the DApp on networks other than the local environment.
+
 ## Building the application
 
 To build the DApp for a local environment, simply execute:
@@ -51,20 +53,6 @@ To build the DApp for a local environment, simply execute:
 docker buildx bake \
     --load
 ```
-
-### Building for other networks
-
-In order to build the DApp for another network, simply override build argument `NETWORK`, which defaults to `localhost`, by setting a value for `*.args.NETWORK`, so the [configuration file related to the selected network](#customizing-the-dapp-for-other-networks) is included during the build process (see [`Makefile`](./Makefile)).
-
-For example, assuming there's a valid configuration file for the Sepolia network, set `*.args.NETWORK` to `sepolia` during the build as follows:
-
-```shell
-docker buildx bake \
-    --load \
-    --set *.args.NETWORK=sepolia
-```
-
-> See [documentation](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) for more details about overriding target configurations for `docker buildx bake`.
 
 ## Running the application
 
@@ -141,8 +129,8 @@ Where:
 In this case, `$DAPP_ADDRESS`, which is also the Rollups address, is the *spender*;
 - `$AMOUNT` is the amount of tokens to be requested in the allowance;
 - `$RPC_URL` is the URL of the RPC endpoint to be used;
-- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
-- `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
+- `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus approving the allowance;
+- `$PRIVATE_KEY` (**only mandatory for non-local networks**) is the private key associated with `$SIGNER_ADDRESS`.
 
 For example, an allowance request coming from account address `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (account index `0` in a local Hardhat node deployment) on localhost using [`SimpleERC20`](#configuring-the-application) (`0x8cA1c547AE4C1D1bb8296a5854c2c50192118E02`) as the ERC-20 contract would look like this:
 
@@ -185,7 +173,7 @@ It accepts any value, as long as properly ABI-encoded;
 - `""` is a 'no-value' passed as parameter `bytes`, which corresponds to additional (layer-2) data to be parsed by the DApp;
 - `$RPC_URL` is the URL of the RPC endpoint to be used;
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the transaction, thus performing the deposit into the DApp;
-- `$PRIVATE_KEY` (**mandatory for testnets**) is the private key associated with `$SIGNER_ADDRESS`.
+- `$PRIVATE_KEY` (**only mandatory for non-local networks**) is the private key associated with `$SIGNER_ADDRESS`.
 
 Any deposit will be logged as a `Report` by the DApp.
 
@@ -269,7 +257,7 @@ Where:
 - `$DAPP_ADDRESS` is the hex representation of the DApp address, as explained in [Gathering DApp data](#gathering-dapp-data);
 - `""` is the actual input;
 - `$SIGNER_ADDRESS` is the hex representation of the account address that will sign the withdrawal request;
-- `$PRIVATE_KEY` (**mandatory for testnets**) is the private key to associated to `$SIGNER_ADDRESS`.
+- `$PRIVATE_KEY` (**only mandatory for non-local networks**) is the private key associated with `$SIGNER_ADDRESS`;
 - `$RPC_URL` is the URL of the RPC endpoint to be used.
 
 As repeatedly stated throughout this document, only withdrawal requests coming from the predefined *withdrawal address* will be fulfilled by the Honeypot DApp.
@@ -293,18 +281,13 @@ cast send 0x59b22D57D4f067708AB0c00552767405926dc768 \
 
 Deploying a new Cartesi DApp to a blockchain requires creating a smart contract on that network, as well as running a Cartesi Validator Node for the DApp.
 
-The first step is to build the DApp's back-end machine, which will produce a hash that serves as a unique identifier.
+### Building machine to deploy
 
-```shell
-docker buildx bake \
-    machine \
-    --load \
-    --set *.args.NETWORK=$NETWORK
-```
+The first step is to build the DApp's back-end machine for the target network, which will produce a hash that serves as a unique identifier.
 
-Where `$NETWORK` identifies the target network to which the DApp must be built.
+In order to do that, you need to override build argument `NETWORK`, which defaults to `localhost`, by setting a value for `*.args.NETWORK`. This ensures that the [configuration file related to the selected network](#customizing-the-dapp-for-other-networks) is included during the build process (see [`Makefile`](./Makefile)).
 
-For example, to build the DApp to be deployed to the Sepolia testnet, execute the following:
+For example, to build a machine to be deployed to Sepolia, proceed as follows:
 
 ```shell
 docker buildx bake \
@@ -312,6 +295,10 @@ docker buildx bake \
     --load \
     --set *.args.NETWORK=sepolia
 ```
+
+> See [documentation](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) for more details about overriding target configurations for `docker buildx bake`.
+
+### Deploying DApp contract
 
 Once the machine docker image is ready, it may be used to deploy a corresponding Rollups smart contract.
 This requires you to specify the account and RPC gateway to be used when submitting the deploy transaction on the target network, which can be done by defining the following environment variables:
@@ -321,7 +308,7 @@ export MNEMONIC=<user sequence of twelve words>
 export RPC_URL=<https://your.rpc.gateway>
 ```
 
-For example, to deploy on the Sepolia testnet using an Alchemy RPC node, you could execute:
+For example, to deploy to the Sepolia testnet using an Alchemy RPC node, you could execute:
 
 ```shell
 export MNEMONIC=<user sequence of twelve words>
@@ -356,16 +343,28 @@ docker compose \
     down -v
 ```
 
-After that, a corresponding Cartesi Validator Node must also be instantiated in order to interact with the deployed smart contract on the target network and handle the back-end logic of the DApp.
+### Running a validator node
+
+With the DApp's smart contract deployed to the target network, a corresponding Cartesi Validator Node must also be instantiated to interact with it and handle the back-end logic of the DApp.
+
 Aside from the environment variables defined before, the node will also need a secure websocket endpoint for the RPC gateway (`WSS_URL`).
 
-For example, for Sepolia via Alchemy, the following additional environment variable must be defined:
+For example, for Sepolia and Alchemy, you would set the following additional variable:
 
 ```shell
 export WSS_URL=wss://eth-sepolia.g.alchemy.com/v2/<API_KEY>
 ```
 
-Make sure to build the node for the target network as explained at [Building for other networks](#building-for-other-networks).
+Before running the Validator Node, a Cartesi Server Manager must be built specifying the target network being used, similarly to what was done before when [building the machine](#building-machine-to-deploy).
+
+For example, to build such a server for the Sepolia network, execute the following command:
+
+```shell
+docker buildx bake \
+    --load \
+    --set *.args.NETWORK=sepolia
+```
+
 Then, the node itself can be started by running `docker compose` as follows:
 
 ```shell
@@ -386,11 +385,20 @@ docker compose \
 
 ### Interacting with a deployed DApp
 
-In order to interact with a deployed DApp, retrieve the addresses of contracts `InputBox` and `ERC20Portal` for the associated network from the [`@cartesi/rollups` npm package](https://www.npmjs.com/package/@cartesi/rollups).
+In order to interact with a deployed DApp, you will need to provide the addresses of a few contracts of interest.
+First of all, you will need the addresses of the Cartesi Rollups contracts `InputBox` and `ERC20Portal` for the associated network. These addresses are available in the [`@cartesi/rollups` npm package](https://www.npmjs.com/package/@cartesi/rollups), and also locally in the file `./deployments/$NETWORK/rollups.json`.
+Besides that, the address of the DApp itself should be retrieved from the DApp deployment file `./deployments/$NETWORK/honeypot.json`. Both deployment files are produced when [deploying the DApp](#deploying-the-dapp).
 
-For example, for the Sepolia network, the deployment data can be found at directory `/deployments/sepolia` and be used to define Variables `INPUT_BOX_ADDRESS`, `ERC20_PORTAL_ADDRESS`.
+Finally, if using a `SimpleERC20` contract deployed with the [`common-contracts` container](./common-contracts/README.md), you may retrieve the corresponding deployment address from file `./common-contracts/deployments/$NETWORK/SimpleERC20.json`.
 
-Besides that, `DAPP_ADDRESS` may be retrieved from the DApp deployment data (e.g, `../deployments/sepolia/honeypot.json`, for the Sepolia network), as noted at [Deploying the DApp](#deploying-the-dapp).
+Putting everything together, for the Sepolia network you may define appropriate environment variables as follows:
+
+```shell
+export DAPP_ADDRESS=$(cat deployments/sepolia/honeypot.json | jq -r '.address')
+export INPUT_BOX_ADDRESS=$(cat deployments/sepolia/rollups.json | jq -r '.contracts.InputBox.address')
+export ERC20_PORTAL_ADDRESS=$(cat deployments/sepolia/rollups.json | jq -r '.contracts.ERC20Portal.address')
+export ERC20_ADDRESS=$(cat common-contracts/deployments/sepolia/SimpleERC20.json | jq -r '.address')
+```
 
 With such configuration in place, one can interact with the DApp as explained at [Interacting with the application](#interacting-with-the-application).
 
