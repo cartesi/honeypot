@@ -18,7 +18,7 @@ on:
         tags:
             - v*
         branches:
-            - add-sepolia-mainnet-builds
+            - main
 permissions:
     contents: read
     packages: write
