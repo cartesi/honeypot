@@ -1,3 +1,4 @@
+target "docker-platforms" {}
 
 variable "TAG" {
   default = "devel"
@@ -36,6 +37,7 @@ target "server" {
     fs = "target:fs"
   }
   tags = ["${DOCKER_ORGANIZATION}/honeypot:${TAG}-server"]
+  inherits = ["docker-platforms"]
 }
 
 target "console" {
