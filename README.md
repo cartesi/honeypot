@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD013 -->
 
-# Honeypot DApp
+# Hanipot DApp
 
 The Honeypot DApp is a [honeypot](https://en.wikipedia.org/wiki/Honeypot_(computing))-like DApp whose pot is the balance of a [pre-configured ERC-20 token](#configuring-the-application) kept by the actual DApp.
 
