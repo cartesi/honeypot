@@ -90,4 +90,5 @@ jobs:
               uses: actions/upload-artifact@master
               with:
                   name: honeypot-logs
-                  path: ./tests/logs/
+                  path: ./returnss
+            /logs/

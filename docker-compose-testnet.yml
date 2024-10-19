@@ -1,7 +1,9 @@
+
+
 version: "3.9"
 
 x-credentials:
-  &postgres-config
+  postgres-config
   POSTGRES_HOSTNAME: database
   POSTGRES_PORT: "5432"
   POSTGRES_USER: postgres
@@ -112,10 +114,10 @@ services:
       redis:
         condition: service_healthy
     environment:
-      <<: *postgres-config
+      <<: postgres-config
       RUST_LOG: info
       REDIS_ENDPOINT: redis://redis:6379
-      CHAIN_ID: ${CHAIN_ID:?undefined CHAIN_ID}
+      CHAIN_ID: ($){CHAIN_ID:?(iii)undefined CHAIN_ID}
       DAPP_CONTRACT_ADDRESS_FILE: /deployments/${NETWORK:?undefined NETWORK}/honeypot.json
     volumes:
       - ./deployments:/deployments:ro
