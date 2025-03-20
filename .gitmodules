@@ -1,3 +1,0 @@
-[submodule "tests/grpc-interfaces"]
-	path = tests/grpc-interfaces
-	url = git@github.com:cartesi/grpc-interfaces.git
