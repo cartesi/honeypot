@@ -28,13 +28,15 @@ FROM --platform=linux/riscv64 riscv64/ubuntu:noble-20250127
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    busybox-static=1:1.36.1-6ubuntu3.1 && \
-    rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
+    busybox-static=1:1.36.1-6ubuntu3.1
 
 # Install guest tools
 ARG MACHINE_EMULATOR_TOOLS_VERSION=0.16.1
 ADD https://github.com/cartesi/machine-emulator-tools/releases/download/v${MACHINE_EMULATOR_TOOLS_VERSION}/machine-emulator-tools-v${MACHINE_EMULATOR_TOOLS_VERSION}.deb /tmp/
 RUN dpkg -i /tmp/machine-emulator-tools-v${MACHINE_EMULATOR_TOOLS_VERSION}.deb
+
+# Strip non-determinism
+RUN rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
 
 # Give permission for dapp user to access /dev/pmem1
 RUN mkdir -p /etc/cartesi-init.d && \
