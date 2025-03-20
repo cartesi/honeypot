@@ -1,4 +1,7 @@
-dist
-generated-src
+*.ext2
+*.tar
+*.bin
 honeypot
-node_modules
+.cartesi
+/snapshot
+/libcmt
