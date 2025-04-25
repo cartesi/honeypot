@@ -1,17 +1,16 @@
 ################################
 # honeypot builder
-FROM --platform=linux/riscv64 riscv64/ubuntu:noble-20250404 AS builder
+FROM --platform=linux/riscv64 alpine:3.21.3 AS builder
 
 # Install build essential
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    busybox-static=1:1.36.1-6ubuntu3.1 \
-    build-essential=12.10ubuntu1
+RUN apk add alpine-sdk
 
-# Install libcmt
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.0
-ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
-RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb
+# Install guest tools and libcmt
+ADD --chmod=644 https://edubart.github.io/linux-packages/apk/keys/cartesi-apk-key.rsa.pub /etc/apk/keys/cartesi-apk-key.rsa.pub
+RUN echo "https://edubart.github.io/linux-packages/apk/stable" >> /etc/apk/repositories
+RUN apk update && \
+    apk add cartesi-machine-guest-tools=0.17.0-r1 && \
+    apk add cartesi-machine-guest-libcmt-dev=0.17.0-r1
 
 # Compile
 WORKDIR /home/dapp
@@ -24,20 +23,15 @@ RUN make HONEYPOT_CONFIG=${HONEYPOT_CONFIG}
 
 ################################
 # rootfs builder
-FROM --platform=linux/riscv64 riscv64/ubuntu:noble-20250404
-
-# Install dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    busybox-static=1:1.36.1-6ubuntu3.1
+FROM --platform=linux/riscv64 alpine:3.21.3
 
 # Install guest tools
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.0
-ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
-RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb
+RUN adduser -D dapp dapp 2>/dev/null
+COPY --from=builder /usr/sbin/cartesi-init /usr/sbin/cartesi-init
+COPY --from=builder /usr/sbin/xhalt /usr/sbin/xhalt
 
-# Strip non-determinism
-RUN rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
+# Remove unneeded packages to shrink image
+RUN apk del --purge apk-tools alpine-release alpine-keys ca-certificates-bundle libc-utils && rm -rf /var/cache/apk /etc/apk /lib/apk
 
 # Give permission for dapp user to access /dev/pmem1
 RUN mkdir -p /etc/cartesi-init.d && \
