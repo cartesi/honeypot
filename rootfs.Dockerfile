@@ -9,7 +9,7 @@ RUN apt-get update && \
     build-essential=12.10ubuntu1
 
 # Install libcmt
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.0
+ARG MACHINE_GUEST_TOOLS_VERSION=0.17.1
 ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
 RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb
 
@@ -32,7 +32,7 @@ RUN apt-get update && \
     busybox-static=1:1.36.1-6ubuntu3.1
 
 # Install guest tools
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.0
+ARG MACHINE_GUEST_TOOLS_VERSION=0.17.1
 ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
 RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb
 
