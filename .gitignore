@@ -1,5 +1,6 @@
 *.ext2
 *.tar
+*.gz
 *.bin
 honeypot
 .cartesi
