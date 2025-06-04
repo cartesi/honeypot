@@ -37,11 +37,13 @@ HARDEN_LDFLAGS = \
 LDFLAGS += -Wl,--build-id=none $(HARDEN_LDFLAGS)
 
 # Machine entrypoint
-MACHINE_ENTRYPOINT = /home/dapp/honeypot
+MACHINE_ENTRYPOINT = exec /home/dapp/honeypot
 
 # Machine initial kernel and flash drives
 MACHINE_FLAGS = \
+	--ram-length=48Mi \
 	--ram-image=linux.bin \
+	--append-bootargs=ro \
 	--flash-drive=label:root,filename:rootfs.ext2 \
 	--flash-drive=label:state,length:4096
 
@@ -73,7 +75,7 @@ snapshot: rootfs.ext2 linux.bin ## Generate cartesi machine genesis snapshot
 	cartesi-machine $(MACHINE_FLAGS) --assert-rolling-template --final-hash --store=$@ -- $(MACHINE_ENTRYPOINT)
 
 rootfs.ext2: rootfs.tar ## Generate cartesi machine rootfs EXT2 filesystem
-	xgenext2fs --block-size 4096 --faketime --readjustment +4096 --tarball $< $@
+	xgenext2fs --block-size 4096 --faketime --readjustment +0 --tarball $< $@
 
 rootfs.tar: rootfs.Dockerfile $(SOURCES) $(HEADERS) ## Generate cartesi machine rootfs filesystem using Docker
 	docker buildx build --progress plain --output type=tar,dest=$@ --file rootfs.Dockerfile --build-arg HONEYPOT_CONFIG=${HONEYPOT_CONFIG} .
@@ -82,7 +84,7 @@ linux.bin: ## Download cartesi machine Linux kernel
 	wget -O linux.bin https://github.com/cartesi/machine-linux-image/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin
 
 shell: rootfs.ext2 linux.bin ## Spawn a cartesi machine guest shell for debugging
-	cartesi-machine $(MACHINE_FLAGS) -v=.:/mnt -u=root -i -- /bin/bash
+	cartesi-machine $(MACHINE_FLAGS) -u=root -i -- exec /bin/bash
 
 lint: lint-cpp lint-lua ## Lint C++ and Lua code
 

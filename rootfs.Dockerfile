@@ -11,7 +11,8 @@ RUN apt-get update && \
 # Install libcmt
 ARG MACHINE_GUEST_TOOLS_VERSION=0.17.1
 ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
-RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb
+RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
+    rm -f /tmp/machine-guest-tools_riscv64.deb
 
 # Compile
 WORKDIR /home/dapp
@@ -34,7 +35,8 @@ RUN apt-get update && \
 # Install guest tools
 ARG MACHINE_GUEST_TOOLS_VERSION=0.17.1
 ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
-RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb
+RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
+    rm -f /tmp/machine-guest-tools_riscv64.deb
 
 # Strip non-determinism
 RUN rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
