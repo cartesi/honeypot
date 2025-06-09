@@ -39,6 +39,9 @@ RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb
 # Strip non-determinism
 RUN rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
 
+# Fix non-determinism issue when installing machine-guest-tools
+RUN cp -a /etc/shadow /etc/shadow-
+
 # Give permission for dapp user to access /dev/pmem1
 RUN mkdir -p /etc/cartesi-init.d && \
     echo "chown dapp:dapp /dev/pmem1" > /etc/cartesi-init.d/dapp-state && \
