@@ -1,0 +1,87 @@
+name: honeypotv2-mainnet-reader
+
+x-env: &env
+  HONEYPOT_ADDRESS: 0x4c1e74ef88a75c24e49eddd9f70d82a94d19251c
+  HONEYPOT_EPOCH_LENGTH: 720
+  HONEYPOT_VERSION: 2.0.0
+  CARTESI_LOG_LEVEL: info
+  CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}
+  CARTESI_BLOCKCHAIN_WS_ENDPOINT: wss://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}
+  CARTESI_BLOCKCHAIN_MAX_BLOCK_RANGE: 500
+  CARTESI_FEATURE_CLAIM_SUBMISSION_ENABLED: false
+  CARTESI_BLOCKCHAIN_ID: 1
+  CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: 0xc70074BDD26d8cF983Ca6A5b89b8db52D5850051
+  CARTESI_CONTRACTS_AUTHORITY_FACTORY_ADDRESS: 0xC7003566dD09Aa0fC0Ce201aC2769aFAe3BF0051
+  CARTESI_CONTRACTS_APPLICATION_FACTORY_ADDRESS: 0xc7006f70875BaDe89032001262A846D3Ee160051
+  CARTESI_CONTRACTS_SELF_HOSTED_APPLICATION_FACTORY_ADDRESS: 0xc700285Ab555eeB5201BC00CFD4b2CC8DED90051
+  CARTESI_DATABASE_CONNECTION: postgres://postgres:password@database:5432/rollupsdb?sslmode=disable
+  CARTESI_AUTH_MNEMONIC: "test test test test test test test test test test test junk"
+
+services:
+  database:
+    image: postgres:17-alpine
+    shm_size: 128mb
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rollupsdb || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: rollupsdb
+
+  migration:
+    image: cartesi/rollups-node:devel
+    command: cartesi-rollups-cli db init
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: "no"
+    environment: *env
+
+  node:
+    image: cartesi/rollups-node:devel
+    command: cartesi-rollups-node
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - node_data:/var/lib/cartesi-rollups-node/data
+      - snapshots:/snapshots
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:10000/livez"]
+      start_period: 10s
+      start_interval: 200ms
+      interval: 10s
+      timeout: 1s
+      retries: 5
+    ports:
+      - "10000:10000" # Supervisor
+      - "10011:10011" # Jsonrpc API service
+      - "10012:10012" # Inspect Service
+    environment: *env
+
+  download_honeypot:
+    image: alpine:latest
+    command: sh -c 'mkdir -p /snapshots/honeypot && wget -qO- https://github.com/cartesi/honeypot/releases/download/v$$HONEYPOT_VERSION/honeypot-snapshot-mainnet.tar.gz | tar -xz -C /snapshots/honeypot/'
+    volumes:
+      - snapshots:/snapshots
+    environment: *env
+
+  register_honeypot:
+    image: cartesi/rollups-node:devel
+    command: sh -c 'cartesi-rollups-cli app register --address $$HONEYPOT_ADDRESS --epoch-length $$HONEYPOT_EPOCH_LENGTH --name honeypot --template-path /snapshots/honeypot'
+    depends_on:
+      node:
+        condition: service_healthy
+      download_honeypot:
+        condition: service_completed_successfully
+    volumes:
+      - snapshots:/snapshots
+    environment: *env
+
+volumes:
+  node_data:
+  snapshots:
