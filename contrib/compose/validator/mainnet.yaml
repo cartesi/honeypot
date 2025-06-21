@@ -1,4 +1,4 @@
-name: honeypotv2-sepolia
+name: honeypotv2-mainnet-validator
 services:
   prt-node:
     init: true
@@ -6,12 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile
       tags:
-        - honeypotv2:sepolia
+        - honeypotv2:mainnet
       args:
-        HONEYPOT_SNAPSHOT: 0xdbe72e1624cfed0e83469f1f5104709ecfc0d4ff6edaa7745d5912b2e184b278
+        HONEYPOT_SNAPSHOT: 0x615acc9fb8ae058d0e45c0d12fa10e1a6c9e645222c6fd94dfeda194ee427c14
         HONEYPOT_VERSION: 2.0.0
-        HONEYPOT_CHAIN_NAME: sepolia
-        HONEYPOT_CHECKSUM: c0331c9689f663ae9a0f6ded113fd51d993b2d1131db8dc9cccb22945f0a6d53
+        HONEYPOT_CHAIN_NAME: mainnet
+        HONEYPOT_CHECKSUM: 3ac94517756af3e57b3130ed71b2399fe5f23db4450693ae8321d32890aa95b9
     volumes:
       - state:/var/lib/cartesi-rollups-prt-node/state
     deploy:
@@ -20,9 +20,9 @@ services:
           cpus: '4.0'
           memory: 2GiB
     environment:
-      WEB3_CHAIN_ID: 11155111
-      APP_ADDRESS: 0xccEbaA7E541BcaA99dE39ca248f0aa6CD33f9e3E
-      MACHINE_PATH: /var/lib/cartesi-rollups-prt-node/snapshots/0xdbe72e1624cfed0e83469f1f5104709ecfc0d4ff6edaa7745d5912b2e184b278
+      WEB3_CHAIN_ID: 1
+      APP_ADDRESS: 0x4c1e74ef88a75c24e49eddd9f70d82a94d19251c
+      MACHINE_PATH: /var/lib/cartesi-rollups-prt-node/snapshots/0x615acc9fb8ae058d0e45c0d12fa10e1a6c9e645222c6fd94dfeda194ee427c14
       RUST_LOG: info
       STATE_DIR: /var/lib/cartesi-rollups-prt-node/state
       WEB3_PRIVATE_KEY: ${WEB3_PRIVATE_KEY}
