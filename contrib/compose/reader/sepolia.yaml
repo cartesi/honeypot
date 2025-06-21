@@ -33,7 +33,7 @@ services:
       POSTGRES_DB: rollupsdb
 
   migration:
-    image: cartesi/rollups-node:devel
+    image: cartesi/rollups-runtime:0.12.0-alpha.20
     command: cartesi-rollups-cli db init
     depends_on:
       database:
@@ -42,7 +42,7 @@ services:
     environment: *env
 
   node:
-    image: cartesi/rollups-node:devel
+    image: cartesi/rollups-runtime:0.12.0-alpha.20
     command: cartesi-rollups-node
     depends_on:
       database:
@@ -71,7 +71,7 @@ services:
     environment: *env
 
   register_honeypot:
-    image: cartesi/rollups-node:devel
+    image: cartesi/rollups-runtime:0.12.0-alpha.20
     command: sh -c 'cartesi-rollups-cli app register --address $$HONEYPOT_ADDRESS --epoch-length $$HONEYPOT_EPOCH_LENGTH --name honeypot --template-path /snapshots/honeypot'
     depends_on:
       node:
