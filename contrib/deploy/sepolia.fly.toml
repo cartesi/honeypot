@@ -1,0 +1,23 @@
+[build]
+  dockerfile = "../compose/Dockerfile"
+  [build.args]
+    HONEYPOT_SNAPSHOT = "0xdbe72e1624cfed0e83469f1f5104709ecfc0d4ff6edaa7745d5912b2e184b278"
+    HONEYPOT_VERSION = "2.0.0"
+    HONEYPOT_CHAIN_NAME = "sepolia"
+    HONEYPOT_CHECKSUM = "c0331c9689f663ae9a0f6ded113fd51d993b2d1131db8dc9cccb22945f0a6d53"
+
+[env]
+  WEB3_CHAIN_ID = "11155111"
+  APP_ADDRESS = "0xccEbaA7E541BcaA99dE39ca248f0aa6CD33f9e3E"
+  MACHINE_PATH = "/var/lib/cartesi-rollups-prt-node/snapshots/0xdbe72e1624cfed0e83469f1f5104709ecfc0d4ff6edaa7745d5912b2e184b278"
+  RUST_LOG = "info"
+  STATE_DIR = "/var/lib/cartesi-rollups-prt-node/state"
+
+[[mounts]]
+  source = "honeypotv2_sepolia"
+  destination = "/var/lib/cartesi-rollups-prt-node/state"
+  initial_size = "2gb"
+
+[[vm]]
+  size = "shared-cpu-4x"
+  memory = "2048"
