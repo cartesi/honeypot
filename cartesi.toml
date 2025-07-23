@@ -1,0 +1,16 @@
+[machine]
+entrypoint = "/home/dapp/honeypot"
+use_docker_env = false
+use_docker_workdir = false
+
+[drives.root]
+builder = "docker"
+dockerfile = "rootfs.Dockerfile"
+tags = ["honeypot:cli"]
+extra_size = "16Mb"
+
+[drives.state]
+builder = "empty"
+size = 4096
+format = "raw"
+mount = false
