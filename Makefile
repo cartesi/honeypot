@@ -36,15 +36,6 @@ HARDEN_LDFLAGS = \
 	-Wl,-z,now
 LDFLAGS += -Wl,--build-id=none $(HARDEN_LDFLAGS)
 
-# Machine entrypoint
-MACHINE_ENTRYPOINT = /home/dapp/honeypot
-
-# Machine initial kernel and flash drives
-MACHINE_FLAGS = \
-	--ram-image=linux.bin \
-	--flash-drive=label:root,filename:rootfs.ext2 \
-	--flash-drive=label:state,length:4096
-
 HONEYPOT_CONFIG = localhost
 
 # Current architecture
@@ -68,21 +59,11 @@ endif
 honeypot: $(SOURCES) $(HEADERS) ## Build honeypot binary
 	$(CXX) $(CXXFLAGS) $(HARDEN_CXXFLAGS) $(INCS) -o $@ $< $(LDFLAGS) $(LIBS)
 
-snapshot: rootfs.ext2 linux.bin ## Generate cartesi machine genesis snapshot
-	rm -rf snapshot
-	cartesi-machine $(MACHINE_FLAGS) --assert-rolling-template --final-hash --store=$@ -- $(MACHINE_ENTRYPOINT)
+snapshot: rootfs.Dockerfile $(SOURCES) $(HEADERS) ## Generate cartesi machine genesis snapshot
+	cartesi-dev build -c cartesi.toml -c cartesi.${HONEYPOT_CONFIG}.toml
 
-rootfs.ext2: rootfs.tar ## Generate cartesi machine rootfs EXT2 filesystem
-	xgenext2fs --block-size 4096 --faketime --readjustment +4096 --tarball $< $@
-
-rootfs.tar: rootfs.Dockerfile $(SOURCES) $(HEADERS) ## Generate cartesi machine rootfs filesystem using Docker
-	docker buildx build --progress plain --output type=tar,dest=$@ --file rootfs.Dockerfile --build-arg HONEYPOT_CONFIG=${HONEYPOT_CONFIG} .
-
-linux.bin: ## Download cartesi machine Linux kernel
-	wget -O linux.bin https://github.com/cartesi/machine-linux-image/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin
-
-shell: rootfs.ext2 linux.bin ## Spawn a cartesi machine guest shell for debugging
-	cartesi-machine $(MACHINE_FLAGS) -v=.:/mnt -u=root -i -- /bin/bash
+shell: snapshot ## Spawn a cartesi machine guest shell for debugging
+	cartesi-dev shell
 
 lint: lint-cpp lint-lua ## Lint C++ and Lua code
 
@@ -109,10 +90,8 @@ test-stress: snapshot ## Run stress tests
 	cd tests && HONEYPOT_CONFIG=${HONEYPOT_CONFIG} lua5.4 honeypot-stress-tests.lua
 
 clean: ## Clean generated files
-	rm -rf snapshot rootfs.ext2 rootfs.tar honeypot
-
-distclean: clean ## Clean generated and downloaded files
-	rm -rf linux.bin
+	cartesi-dev clean
+	rm -rf honeypot
 
 help: ## Show this help
 	@sed \
@@ -121,4 +100,4 @@ help: ## Show this help
 		-e 's/^\(.\+\):\(.*\)/$(shell tput setaf 6)\1$(shell tput sgr0):\2/' \
 		$(MAKEFILE_LIST) | column -c2 -t -s :
 
-.PHONY: all shell lint lint-cpp lint-lua format format-cpp format-lua test test-stress clean distclean help
+.PHONY: all shell lint lint-cpp lint-lua format format-cpp format-lua test test-stress clean help

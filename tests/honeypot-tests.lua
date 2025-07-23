@@ -6,7 +6,7 @@ local lester = require("third-party.lester")
 local describe, it, expect = lester.describe, lester.it, lester.expect
 
 local ERC20_ALICE_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
-local MACHINE_STORED_DIR = "../snapshot"
+local MACHINE_STORED_DIR = "../.cartesi/image"
 local MACHINE_RUNTIME_CONFIG = { skip_root_hash_check = true }
 
 describe("honeypot basic", function()
