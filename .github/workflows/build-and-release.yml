@@ -49,7 +49,7 @@ jobs:
 
       - name: Create artifact archive
         run: |
-          cd snapshot && tar -czf ../honeypot-snapshot-${{ matrix.config }}.tar.gz * && cd ..
+          cd .cartesi/image && tar -czf ../../honeypot-snapshot-${{ matrix.config }}.tar.gz * && cd ../..
           sha256sum honeypot-snapshot-${{ matrix.config }}.tar.gz > honeypot-snapshot-${{ matrix.config }}.tar.gz.sha256
 
       - name: Upload build artifacts

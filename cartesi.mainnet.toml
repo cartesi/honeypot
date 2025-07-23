@@ -1,0 +1,2 @@
+[drives.root]
+build_args = ["HONEYPOT_CONFIG=mainnet"]

@@ -6,7 +6,7 @@ local lester = require("third-party.lester")
 local bint256 = require("third-party.bint")(256)
 local describe, it, expect = lester.describe, lester.it, lester.expect
 
-local MACHINE_STORED_DIR = "../snapshot"
+local MACHINE_STORED_DIR = "../.cartesi/image"
 local MACHINE_RUNTIME_CONFIG = {
     htif = { no_console_putchar = true },
     skip_root_hash_check = true,

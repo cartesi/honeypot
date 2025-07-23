@@ -4,5 +4,4 @@
 *.bin
 honeypot
 .cartesi
-/snapshot
 /libcmt
