@@ -5,3 +5,5 @@
 honeypot
 .cartesi
 /libcmt
+tests/contracts.ts
+/node_modules
