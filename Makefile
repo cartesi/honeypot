@@ -84,7 +84,8 @@ format-lua: ## Format Lua code
 		tests/testlib/*.lua
 
 test: snapshot ## Run tests
-	cd tests && HONEYPOT_CONFIG=${HONEYPOT_CONFIG} lua5.4 honeypot-tests.lua
+	pnpm i
+	pnpm run test
 
 test-stress: snapshot ## Run stress tests
 	cd tests && HONEYPOT_CONFIG=${HONEYPOT_CONFIG} lua5.4 honeypot-stress-tests.lua
