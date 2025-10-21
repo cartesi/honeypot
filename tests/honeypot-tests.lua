@@ -1,7 +1,7 @@
 local cartesi = require("cartesi")
 local consts = require("honeypot-consts")
-require("testlib.machine-ext")
 local encoder = require("testlib.encoder")
+local load_rolling_machine = require("testlib.rolling-machine")
 local lester = require("third-party.lester")
 local describe, it, expect = lester.describe, lester.it, lester.expect
 
@@ -10,7 +10,7 @@ local MACHINE_STORED_DIR = "../snapshot"
 local MACHINE_RUNTIME_CONFIG = { skip_root_hash_check = true }
 
 describe("honeypot basic", function()
-    local machine <close> = cartesi.machine(MACHINE_STORED_DIR, MACHINE_RUNTIME_CONFIG)
+    local machine <close> = load_rolling_machine(MACHINE_STORED_DIR, MACHINE_RUNTIME_CONFIG)
 
     it("should accept first deposit", function()
         local res = machine:advance_state(encoder.encode_advance_input({
@@ -63,7 +63,7 @@ describe("honeypot basic", function()
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore deposit with invalid token address", function()
+    it("should reject deposit with invalid token address", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             payload = encoder.encode_erc20_deposit({
@@ -74,13 +74,13 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_DEPOSIT_INVALID_TOKEN },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore deposit with invalid sender address", function()
+    it("should reject deposit with invalid sender address", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = ERC20_ALICE_ADDRESS,
             payload = encoder.encode_erc20_deposit({
@@ -91,13 +91,13 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore deposit with invalid payload length", function()
+    it("should reject deposit with invalid payload length", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             payload = encoder.encode_erc20_deposit({
@@ -109,7 +109,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -135,14 +135,14 @@ describe("honeypot basic", function()
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore withdraw with invalid payload length", function()
+    it("should reject withdraw with invalid payload length", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_WITHDRAWAL_ADDRESS,
             payload = "\x00",
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -170,13 +170,13 @@ describe("honeypot basic", function()
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore withdraw when there is no funds", function()
+    it("should reject withdraw when there is no funds", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_WITHDRAWAL_ADDRESS,
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_WITHDRAW_NO_FUNDS },
         }
         expect.equal(res, expected_res)
@@ -194,22 +194,22 @@ describe("honeypot basic", function()
 end)
 
 describe("honeypot edge", function()
-    local machine <close> = cartesi.machine(MACHINE_STORED_DIR, MACHINE_RUNTIME_CONFIG)
+    local machine <close> = load_rolling_machine(MACHINE_STORED_DIR, MACHINE_RUNTIME_CONFIG)
 
-    it("should ignore empty input", function()
+    it("should reject empty input", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             payload = "",
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore incomplete deposit input", function()
+    it("should reject incomplete deposit input", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             payload = encoder.encode_erc20_address(consts.ERC20_TOKEN_ADDRESS)
@@ -217,14 +217,14 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore deposit of an addition overflow", function()
-        local overflow_machine <close> = cartesi.machine(MACHINE_STORED_DIR, MACHINE_RUNTIME_CONFIG)
+    it("should reject deposit of an addition overflow", function()
+        local overflow_machine <close> = load_rolling_machine(MACHINE_STORED_DIR, MACHINE_RUNTIME_CONFIG)
 
         local res = overflow_machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
@@ -251,13 +251,13 @@ describe("honeypot edge", function()
         }))
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_DEPOSIT_BALANCE_OVERFLOW },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore input chain id out of supported range", function()
+    it("should reject input chain id out of supported range", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             chain_id = "0x10000000000000000",
@@ -269,13 +269,13 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore input block number out of supported range", function()
+    it("should reject input block number out of supported range", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             block_number = "0x10000000000000000",
@@ -287,13 +287,13 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore input block timestamp out of supported range", function()
+    it("should reject input block timestamp out of supported range", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             block_timestamp = "0x10000000000000000",
@@ -305,13 +305,13 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore input index out of supported range", function()
+    it("should reject input index out of supported range", function()
         local res = machine:advance_state(encoder.encode_advance_input({
             msg_sender = consts.ERC20_PORTAL_ADDRESS,
             index = "0x10000000000000000",
@@ -323,13 +323,13 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
     end)
 
-    it("should ignore input with invalid payload offset", function()
+    it("should reject input with invalid payload offset", function()
         local payload = encoder.encode_erc20_deposit({
             contract_address = consts.ERC20_TOKEN_ADDRESS,
             sender_address = ERC20_ALICE_ADDRESS,
@@ -343,14 +343,14 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
         end
     end)
 
-    it("should ignore input with invalid payload length", function()
+    it("should reject input with invalid payload length", function()
         local payload = encoder.encode_erc20_deposit({
             contract_address = consts.ERC20_TOKEN_ADDRESS,
             sender_address = ERC20_ALICE_ADDRESS,
@@ -364,7 +364,7 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
@@ -377,7 +377,7 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
@@ -390,7 +390,7 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
