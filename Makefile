@@ -36,6 +36,11 @@ HARDEN_LDFLAGS = \
 	-Wl,-z,now
 LDFLAGS += -Wl,--build-id=none $(HARDEN_LDFLAGS)
 
+# Linux image
+LINUX_KERNEL_VER = 6.5.13-ctsi-1
+LINUX_IMAGE_VER = 0.20.0
+LINUX_IMAGE_SHA256SUM = 65dd100ff6204346ac2f50f772721358b5c1451450ceb39a154542ee27b4c947
+
 # Machine entrypoint
 MACHINE_ENTRYPOINT = exec /home/dapp/honeypot
 
@@ -81,7 +86,8 @@ rootfs.tar: rootfs.Dockerfile $(SOURCES) $(HEADERS) ## Generate cartesi machine 
 	docker buildx build --progress plain --output type=tar,dest=$@ --file rootfs.Dockerfile --build-arg HONEYPOT_CONFIG=${HONEYPOT_CONFIG} .
 
 linux.bin: ## Download cartesi machine Linux kernel
-	wget -O linux.bin https://github.com/cartesi/machine-linux-image/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin
+	wget -O linux.bin https://github.com/cartesi/machine-linux-image/releases/download/v$(LINUX_IMAGE_VER)/linux-$(LINUX_KERNEL_VER)-v$(LINUX_IMAGE_VER).bin
+	echo "$(LINUX_IMAGE_SHA256SUM) linux.bin" | sha256sum -c
 
 shell: rootfs.ext2 linux.bin ## Spawn a cartesi machine guest shell for debugging
 	cartesi-machine $(MACHINE_FLAGS) -u=root -i -- exec /bin/bash
