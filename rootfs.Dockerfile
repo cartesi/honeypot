@@ -15,7 +15,7 @@ set -eu
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates
 apt-get update --snapshot=${APT_UPDATE_SNAPSHOT}
-apt-get install -y busybox-static
+apt-get install -y --no-install-recommends busybox-static
 apt-get remove -y --purge ca-certificates
 apt-get autoremove -y --purge
 EOF
@@ -27,7 +27,7 @@ ADD --checksum=sha256:${MACHINE_GUEST_TOOLS_SHA256SUM} \
   https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb \
   /tmp/
 RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
-    rm -f /tmp/machine-guest-tools_riscv64.deb
+    rm /tmp/machine-guest-tools_riscv64.deb
 
 ################################
 # honeypot builder
@@ -53,11 +53,6 @@ FROM base
 
 # Strip non-determinism
 RUN rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
-
-# Give permission for dapp user to access /dev/pmem1
-RUN mkdir -p /etc/cartesi-init.d && \
-    echo "chown dapp:dapp /dev/pmem1" > /etc/cartesi-init.d/dapp-state && \
-    chmod 755 /etc/cartesi-init.d/dapp-state
 
 # Install honeypot
 WORKDIR /home/dapp

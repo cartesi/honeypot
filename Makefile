@@ -50,7 +50,7 @@ MACHINE_FLAGS = \
 	--ram-image=linux.bin \
 	--append-bootargs=ro \
 	--flash-drive=label:root,filename:rootfs.ext2 \
-	--flash-drive=label:state,length:4096
+	--flash-drive=label:state,length:4096,user:dapp
 
 HONEYPOT_CONFIG = localhost
 
@@ -90,7 +90,7 @@ linux.bin: ## Download cartesi machine Linux kernel
 	echo "$(LINUX_IMAGE_SHA256SUM) linux.bin" | sha256sum -c
 
 shell: rootfs.ext2 linux.bin ## Spawn a cartesi machine guest shell for debugging
-	cartesi-machine $(MACHINE_FLAGS) -u=root -i -- exec /bin/bash
+	cartesi-machine $(MACHINE_FLAGS) -u=root -i -- exec /bin/busybox ash
 
 lint: lint-cpp lint-lua ## Lint C++ and Lua code
 
