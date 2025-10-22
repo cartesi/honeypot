@@ -21,7 +21,9 @@ EOF
 
 # Install guest tools
 ARG MACHINE_GUEST_TOOLS_VERSION
-ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
+ADD --checksum=sha256:c077573dbcf0cdc146adf14b480bfe454ca63aa4d3e8408c5487f550a5b77a41 \
+  https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb \
+  /tmp/
 RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
     rm -f /tmp/machine-guest-tools_riscv64.deb
 
