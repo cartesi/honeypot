@@ -1,15 +1,35 @@
+ARG UBUNTU_TAG=noble-20251001
+ARG APT_UPDATE_SNAPSHOT=20251022T030400Z
+ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2
+ARG DEBIAN_FRONTEND=noninteractive
+
+################################
+# base
+FROM --platform=linux/riscv64 ubuntu:${UBUNTU_TAG} as base
+
+ARG APT_UPDATE_SNAPSHOT
+ARG DEBIAN_FRONTEND
+RUN <<EOF
+set -eu
+apt-get update
+apt-get install -y --no-install-recommends ca-certificates
+apt-get update --snapshot=${APT_UPDATE_SNAPSHOT}
+apt-get remove -y --purge ca-certificates
+apt-get autoremove -y --purge
+EOF
+
 ################################
 # honeypot builder
-FROM --platform=linux/riscv64 riscv64/ubuntu:noble-20250404 AS builder
+FROM base AS builder
 
 # Install build essential
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    busybox-static=1:1.36.1-6ubuntu3.1 \
-    build-essential=12.10ubuntu1
+ARG DEBIAN_FRONTEND
+RUN apt-get install -y --no-install-recommends \
+    build-essential \
+    busybox-static
 
 # Install libcmt
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2
+ARG MACHINE_GUEST_TOOLS_VERSION
 ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
 RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
     rm -f /tmp/machine-guest-tools_riscv64.deb
@@ -25,15 +45,15 @@ RUN make HONEYPOT_CONFIG=${HONEYPOT_CONFIG}
 
 ################################
 # rootfs builder
-FROM --platform=linux/riscv64 riscv64/ubuntu:noble-20250404
+FROM base
 
 # Install dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    busybox-static=1:1.36.1-6ubuntu3.1
+ARG DEBIAN_FRONTEND
+RUN apt-get install -y --no-install-recommends \
+    busybox-static
 
 # Install guest tools
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2
+ARG MACHINE_GUEST_TOOLS_VERSION
 ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
 RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
     rm -f /tmp/machine-guest-tools_riscv64.deb
