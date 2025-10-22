@@ -14,9 +14,16 @@ set -eu
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates
 apt-get update --snapshot=${APT_UPDATE_SNAPSHOT}
+apt-get install busybox-static
 apt-get remove -y --purge ca-certificates
 apt-get autoremove -y --purge
 EOF
+
+# Install guest tools
+ARG MACHINE_GUEST_TOOLS_VERSION
+ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
+RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
+    rm -f /tmp/machine-guest-tools_riscv64.deb
 
 ################################
 # honeypot builder
@@ -25,14 +32,7 @@ FROM base AS builder
 # Install build essential
 ARG DEBIAN_FRONTEND
 RUN apt-get install -y --no-install-recommends \
-    build-essential \
-    busybox-static
-
-# Install libcmt
-ARG MACHINE_GUEST_TOOLS_VERSION
-ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
-RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
-    rm -f /tmp/machine-guest-tools_riscv64.deb
+    build-essential
 
 # Compile
 WORKDIR /home/dapp
@@ -46,17 +46,6 @@ RUN make HONEYPOT_CONFIG=${HONEYPOT_CONFIG}
 ################################
 # rootfs builder
 FROM base
-
-# Install dependencies
-ARG DEBIAN_FRONTEND
-RUN apt-get install -y --no-install-recommends \
-    busybox-static
-
-# Install guest tools
-ARG MACHINE_GUEST_TOOLS_VERSION
-ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
-RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
-    rm -f /tmp/machine-guest-tools_riscv64.deb
 
 # Strip non-determinism
 RUN rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
