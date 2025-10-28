@@ -166,7 +166,7 @@ local function inspect_balance_check(machine, balance)
     expect.equal(res, expected_res)
 end
 
-local function perform_tests(remote_protocol, num_iterations)
+local function perform_tests(num_iterations)
     local machine <close> = load_rolling_machine(MACHINE_STORED_DIR, MACHINE_RUNTIME_CONFIG)
     local balance = bint256(0)
     local num_iterations1 = num_iterations // 10
@@ -175,7 +175,7 @@ local function perform_tests(remote_protocol, num_iterations)
     -- Make tests reproducible
     math.randomseed(0)
 
-    describe("honeypot " .. remote_protocol .. " stress", function()
+    describe("honeypot stress", function()
         it("random advance state and inspect state (" .. num_iterations1 .. " iterations)", function()
             for _ = 1, num_iterations1 do
                 balance = random_advance_state(machine, balance)
@@ -189,13 +189,13 @@ local function perform_tests(remote_protocol, num_iterations)
                 balance = random_advance_state(machine, balance)
             end
             local elapsed = lester.seconds() - start
-            print(string.format("%s %.2f req/s", remote_protocol, num_iterations2 / elapsed))
+            print(string.format("%.2f req/s", num_iterations2 / elapsed))
             inspect_balance_check(machine, balance)
         end)
     end)
 end
 
-perform_tests("local", 1000)
+perform_tests(1000)
 
 print("Running tests for 10000 requests, this should take a few minutes...")
-perform_tests("local", 10000)
+perform_tests(10000)
