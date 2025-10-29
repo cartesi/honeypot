@@ -8,33 +8,21 @@ WARN_CXXFLAGS = -Wall -Wextra -Wpedantic -Wformat -Werror=format-security -Wno-m
 OPT_CXXFLAGS = -O1
 
 # C++ flags to improve safety
-HARDEN_CXXFLAGS = \
-	-D_FORTIFY_SOURCE=3 \
-	-D_GLIBCXX_ASSERTIONS \
-	-ftrivial-auto-var-init=zero \
-	-fstack-protector-strong \
-	-fstack-clash-protection \
-	-fno-strict-aliasing \
-	-fno-strict-overflow \
-	-fPIE
+HARDEN_CXXFLAGS = -fno-strict-aliasing -fno-strict-overflow -fhardened -Wno-hardened
 
-# Use C++20, without exceptions and RTTI to have minimal overhead and predictable behavior
+# Use C++23, without exceptions and RTTI to have minimal overhead and predictable behavior
 CXXFLAGS += \
-	-std=c++20 \
+	$(OPT_CXXFLAGS) \
+	-std=c++23 \
 	-fno-exceptions \
 	-fno-rtti \
-	$(WARN_CXXFLAGS) \
-	$(OPT_CXXFLAGS)
+	$(WARN_CXXFLAGS)
 
 # Use libcmt for CMIO device control
 LIBS = -l:libcmt.a
 
-# Linker flags to improve safety
-HARDEN_LDFLAGS = \
-	-pie \
-	-Wl,-z,relro \
-	-Wl,-z,now
-LDFLAGS += -Wl,--build-id=none $(HARDEN_LDFLAGS)
+# Linker flags to make binary deterministic
+LDFLAGS += -Wl,--build-id=none
 
 # Linux image
 LINUX_KERNEL_VER = 6.5.13-ctsi-1

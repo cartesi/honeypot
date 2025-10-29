@@ -6,7 +6,7 @@ Operating like a digital honeypot, it accepts deposits freely but enforces stric
 The application maintains a persistent balance state, generates reports for all operations, and creates vouchers exclusively when authorized withdrawal requests are processed.
 
 It demonstrates the security of an ERC-20 token deposit and withdrawal application built on the Cartesi Rollups framework.
-It's written in C++20 using Cartesi Machine low level API with several safety and security measures, including comprehensive unit tests and stress tests.
+It's written in C++23 using Cartesi Machine low level API with several safety and security measures, including comprehensive unit tests and stress tests.
 It runs inside a RISC-V Cartesi Machine environment.
 
 ## Technical Details
@@ -42,7 +42,7 @@ The application is designed to be secure with the following features:
 - Thorough input validation
 - Arithmetic overflow protection for balance operations
 - Error handling and reporting for every function call
-- Implemented in modern and idiomatic C++20
+- Implemented in modern and idiomatic C++23
 - No use of dynamic memory allocation
 - No use of exceptions or RTTI
 - Compiled with strict C++ hardening flags

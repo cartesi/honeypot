@@ -37,7 +37,7 @@ FROM base AS builder
 # Install build essential
 ARG DEBIAN_FRONTEND
 RUN apt-get install -y --no-install-recommends \
-    build-essential
+    make g++-14
 
 # Compile
 WORKDIR /home/dapp
@@ -46,7 +46,7 @@ COPY honeypot.cpp .
 COPY config config
 ENV SOURCE_DATE_EPOCH=0
 ARG HONEYPOT_CONFIG=localhost
-RUN make HONEYPOT_CONFIG=${HONEYPOT_CONFIG}
+RUN make HONEYPOT_CONFIG=${HONEYPOT_CONFIG} CXX=g++-14
 
 ################################
 # rootfs builder
