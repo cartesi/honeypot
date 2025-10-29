@@ -165,7 +165,6 @@ template <typename STATE>
 [[nodiscard]]
 STATE *dapp_load_state(const char *block_device) {
     // Open the dapp state block device.
-    // Note that we open but never close it, we intentionally let the OS do this automatically on exit.
     const int state_fd = open(block_device, O_RDWR);
     if (state_fd < 0) {
         std::ignore = std::fprintf(stderr, "[dapp] unable to open state block device: %s\n", std::strerror(errno));
@@ -175,12 +174,12 @@ STATE *dapp_load_state(const char *block_device) {
     const auto size = lseek(state_fd, 0, SEEK_END);
     if (size < 0) {
         std::ignore = std::fprintf(stderr, "[dapp] unable to seek state block device: %s\n", std::strerror(errno));
-        close(state_fd);
+        std::ignore = close(state_fd);
         return nullptr;
     }
     if (static_cast<size_t>(size) < sizeof(STATE)) {
         std::ignore = std::fprintf(stderr, "[dapp] state block device size is too small\n");
-        close(state_fd);
+        std::ignore = close(state_fd);
         return nullptr;
     }
     // Map the state block device to memory.
@@ -189,7 +188,7 @@ STATE *dapp_load_state(const char *block_device) {
     if (mem == MAP_FAILED) {
         std::ignore =
             std::fprintf(stderr, "[dapp] unable to map state block device to memory: %s\n", std::strerror(errno));
-        close(state_fd);
+        std::ignore = close(state_fd);
         return nullptr;
     }
     // After the mmap() call, the file descriptor can be closed immediately without invalidating the mapping.
@@ -219,13 +218,13 @@ constexpr erc20_address ERC20_WITHDRAWAL_ADDRESS = {CONFIG_ERC20_WITHDRAWAL_ADDR
 constexpr erc20_address ERC20_TOKEN_ADDRESS = {CONFIG_ERC20_TOKEN_ADDRESS};
 
 // Status code sent in as reports for well formed advance requests.
-enum advance_status : uint8_t {
-    ADVANCE_STATUS_SUCCESS = 0,
-    ADVANCE_STATUS_INVALID_REQUEST,
-    ADVANCE_STATUS_DEPOSIT_INVALID_TOKEN,
-    ADVANCE_STATUS_DEPOSIT_BALANCE_OVERFLOW,
-    ADVANCE_STATUS_WITHDRAW_NO_FUNDS,
-    ADVANCE_STATUS_WITHDRAW_VOUCHER_FAILED,
+enum class advance_status : uint8_t {
+    SUCCESS = 0,
+    INVALID_REQUEST,
+    DEPOSIT_INVALID_TOKEN,
+    DEPOSIT_BALANCE_OVERFLOW,
+    WITHDRAW_NO_FUNDS,
+    WITHDRAW_VOUCHER_FAILED,
 };
 
 // POD for advance reports.
@@ -248,14 +247,14 @@ bool process_deposit(cmt_rollup_t *rollup, dapp_state *state, const erc20_deposi
     // Check token address.
     if (deposit.token_address != ERC20_TOKEN_ADDRESS) {
         std::ignore = std::fprintf(stderr, "[dapp] invalid deposit token address\n");
-        std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_DEPOSIT_INVALID_TOKEN});
+        std::ignore = rollup_emit_report(rollup, advance_report{advance_status::DEPOSIT_INVALID_TOKEN});
         return false;
     }
     // Add deposit amount to balance.
     be256 new_balance{};
     if (!be256_checked_add(new_balance, state->balance, deposit.amount)) {
         std::ignore = std::fprintf(stderr, "[dapp] deposit balance overflow\n");
-        std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_DEPOSIT_BALANCE_OVERFLOW});
+        std::ignore = rollup_emit_report(rollup, advance_report{advance_status::DEPOSIT_BALANCE_OVERFLOW});
         return false;
     }
     state->balance = new_balance;
@@ -263,7 +262,7 @@ bool process_deposit(cmt_rollup_t *rollup, dapp_state *state, const erc20_deposi
     dapp_flush_state(state);
     // Report that operation succeed.
     std::ignore = std::fprintf(stderr, "[dapp] successful deposit\n");
-    std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_SUCCESS});
+    std::ignore = rollup_emit_report(rollup, advance_report{advance_status::SUCCESS});
     return true;
 }
 
@@ -272,14 +271,14 @@ bool process_withdraw(cmt_rollup_t *rollup, dapp_state *state) {
     // Report an error if the balance is empty.
     if (state->balance == be256{}) {
         std::ignore = std::fprintf(stderr, "[dapp] no funds to withdraw\n");
-        std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_WITHDRAW_NO_FUNDS});
+        std::ignore = rollup_emit_report(rollup, advance_report{advance_status::WITHDRAW_NO_FUNDS});
         return false;
     }
     // Issue a voucher with the entire balance.
     const erc20_transfer transfer_payload = encode_erc20_transfer(ERC20_WITHDRAWAL_ADDRESS, state->balance);
     if (!rollup_emit_voucher(rollup, ERC20_TOKEN_ADDRESS, transfer_payload)) {
         std::ignore = std::fprintf(stderr, "[dapp] unable to issue withdraw voucher\n");
-        std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_WITHDRAW_VOUCHER_FAILED});
+        std::ignore = rollup_emit_report(rollup, advance_report{advance_status::WITHDRAW_VOUCHER_FAILED});
         return false;
     }
     // Only zero balance after successful voucher emission.
@@ -288,7 +287,7 @@ bool process_withdraw(cmt_rollup_t *rollup, dapp_state *state) {
     dapp_flush_state(state);
     // Report that operation succeed.
     std::ignore = std::fprintf(stderr, "[dapp] successful withdrawal\n");
-    std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_SUCCESS});
+    std::ignore = rollup_emit_report(rollup, advance_report{advance_status::SUCCESS});
     return true;
 }
 
@@ -299,7 +298,7 @@ bool advance_state(cmt_rollup_t *rollup, dapp_state *state) {
     const int err = cmt_rollup_read_advance_state(rollup, &input);
     if (err < 0) {
         std::ignore = std::fprintf(stderr, "[dapp] unable to read advance state: %s\n", std::strerror(-err));
-        std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_INVALID_REQUEST});
+        std::ignore = rollup_emit_report(rollup, advance_report{advance_status::INVALID_REQUEST});
         return false;
     }
     // Deposit?
@@ -315,7 +314,7 @@ bool advance_state(cmt_rollup_t *rollup, dapp_state *state) {
     }
     // Invalid request.
     std::ignore = std::fprintf(stderr, "[dapp] invalid advance state request\n");
-    std::ignore = rollup_emit_report(rollup, advance_report{ADVANCE_STATUS_INVALID_REQUEST});
+    std::ignore = rollup_emit_report(rollup, advance_report{advance_status::INVALID_REQUEST});
     return false;
 }
 
@@ -353,7 +352,8 @@ int main() {
     bool accept_previous_request = true;
     while (true) {
         // Always continue, despite request failing or not.
-        accept_previous_request = rollup_process_next_request(&rollup, state, advance_state, inspect_state, accept_previous_request);
+        accept_previous_request =
+            rollup_process_next_request(&rollup, state, advance_state, inspect_state, accept_previous_request);
     }
     // Unreachable code, return is intentionally omitted.
 }
