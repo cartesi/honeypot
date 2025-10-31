@@ -1,22 +1,20 @@
-# cartesi-rollups-prt-node build arguments
-ARG CARTESI_ROLLUPS_PRT_NODE_VERSION=1.0.0
-ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_AMD64=5c9a30c862cf87b0f206287b9537b7297a9a4e07b1557bc7249ffbaf54e65aa7
-ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_ARM64=9c8b1cfbb2df1fa1e542833b65ca8b63a6ecc391948f9b2a260e0661c08e7f56
+# syntax=docker/dockerfile:1
+
+###
+# Build arguments
+ARG CARTESI_ROLLUPS_PRT_NODE_VERSION=2.0.0
+ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_AMD64=4ddc4a18f46894b43f9a6c7283190133ba6ccfdd856b12cbf470a793bf68a08e
+ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_ARM64=3801b8a33de5cbcf55d10fa67eb18379c88cdc7c0140f2c845b14d2741c095d3
+
+# baseimage args
+ARG DEBIAN_TAG=trixie-20251103-slim
+ARG DEBIAN_DIGEST=sha256:a347fd7510ee31a84387619a492ad6c8eb0af2f2682b916ff3e643eb076f925a
 
 ###
 # base image stage
-FROM debian:bookworm-20250520@sha256:bd73076dc2cd9c88f48b5b358328f24f2a4289811bd73787c031e20db9f97123 AS base
-
+FROM debian:${DEBIAN_TAG}@${DEBIAN_DIGEST} AS base
 ARG DEBIAN_FRONTEND=noninteractive
-SHELL ["/bin/bash", "-eu", "-c"]
-
-RUN <<EOF
-apt-get update
-apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    xxd
-EOF
+RUN apt-get update
 
 ###
 # cartesi-rollups-prt-node stage
@@ -26,7 +24,12 @@ ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_AMD64
 ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_ARM64
 ARG TARGETARCH
 
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get install -y --no-install-recommends curl ca-certificates tar
+
 RUN <<EOF
+set -euo pipefail
+
 case "${TARGETARCH}" in
     amd64) curl -fsSL https://github.com/cartesi/dave/releases/download/v${CARTESI_ROLLUPS_PRT_NODE_VERSION}/cartesi-rollups-prt-node-Linux-gnu-x86_64.tar.gz \
             -o /tmp/cartesi-rollups-prt-node.tar.gz; \
@@ -42,18 +45,23 @@ rm /tmp/cartesi-rollups-prt-node.tar.gz
 EOF
 
 ###
-## honeypotv2-machine-snapshot stage
-FROM base AS honeypotv2-machine-snapshot
+## honeypot-machine-snapshot stage
+FROM base AS honeypot-machine-snapshot
 ARG HONEYPOT_SNAPSHOT
 ARG HONEYPOT_VERSION
 ARG HONEYPOT_CHAIN_NAME
 ARG HONEYPOT_CHECKSUM
 
 WORKDIR /var/lib/cartesi-rollups-prt-node/snapshots/${HONEYPOT_SNAPSHOT}
+ADD --checksum=sha256:${HONEYPOT_CHECKSUM} \
+    https://github.com/cartesi/honeypot/releases/download/v${HONEYPOT_VERSION}/honeypot-snapshot-${HONEYPOT_CHAIN_NAME}.tar.gz \
+    /tmp/honeypot-snapshot.tar.gz
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get install -y --no-install-recommends xxd
+
 RUN <<EOF
-curl -fsSL https://github.com/cartesi/honeypot/releases/download/v${HONEYPOT_VERSION}/honeypot-snapshot-${HONEYPOT_CHAIN_NAME}.tar.gz \
-    -o /tmp/honeypot-snapshot.tar.gz
-echo "${HONEYPOT_CHECKSUM} /tmp/honeypot-snapshot.tar.gz" | sha256sum -c
+set -eu
 tar -xzf /tmp/honeypot-snapshot.tar.gz -C /var/lib/cartesi-rollups-prt-node/snapshots/${HONEYPOT_SNAPSHOT}
 test "${HONEYPOT_SNAPSHOT}" = "0x$(xxd -p -c32 /var/lib/cartesi-rollups-prt-node/snapshots/${HONEYPOT_SNAPSHOT}/hash)"
 EOF
@@ -63,11 +71,14 @@ EOF
 FROM base
 ARG HONEYPOT_SNAPSHOT
 
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get install -y --no-install-recommends ca-certificates
+
 COPY --from=cartesi-rollups-prt-node        \
     /usr/local/bin/cartesi-rollups-prt-node \
     /usr/local/bin/cartesi-rollups-prt-node
 
-COPY --from=honeypotv2-machine-snapshot                                 \
+COPY --from=honeypot-machine-snapshot                                   \
     /var/lib/cartesi-rollups-prt-node/snapshots/${HONEYPOT_SNAPSHOT}    \
     /var/lib/cartesi-rollups-prt-node/snapshots/${HONEYPOT_SNAPSHOT}
 

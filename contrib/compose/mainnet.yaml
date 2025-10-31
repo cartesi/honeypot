@@ -1,4 +1,4 @@
-name: honeypotv2-mainnet
+name: honeypotv3-mainnet
 services:
   prt-node:
     init: true
@@ -6,12 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile
       tags:
-        - honeypotv2:mainnet
+        - honeypot:v3-mainnet
       args:
-        HONEYPOT_SNAPSHOT: 0x615acc9fb8ae058d0e45c0d12fa10e1a6c9e645222c6fd94dfeda194ee427c14
-        HONEYPOT_VERSION: 2.0.0
+        HONEYPOT_SNAPSHOT: 0x144d45af1181b35f2b11c4b1150d6cb16934c28093707fb97c911ff16b3fe609
+        HONEYPOT_VERSION: 3.0.0
         HONEYPOT_CHAIN_NAME: mainnet
-        HONEYPOT_CHECKSUM: 3ac94517756af3e57b3130ed71b2399fe5f23db4450693ae8321d32890aa95b9
+        HONEYPOT_CHECKSUM: ad84d9b333308106e72c89c16906746c37bda69a1e83d0800b0543b47c1099d0
     volumes:
       - state:/var/lib/cartesi-rollups-prt-node/state
     deploy:
@@ -21,8 +21,8 @@ services:
           memory: 2GiB
     environment:
       WEB3_CHAIN_ID: 1
-      APP_ADDRESS: 0x4c1e74ef88a75c24e49eddd9f70d82a94d19251c
-      MACHINE_PATH: /var/lib/cartesi-rollups-prt-node/snapshots/0x615acc9fb8ae058d0e45c0d12fa10e1a6c9e645222c6fd94dfeda194ee427c14
+      APP_ADDRESS: 0xfDDF68726a28e418fA0c2a52c3134904a8c3e998
+      MACHINE_PATH: /var/lib/cartesi-rollups-prt-node/snapshots/0x144d45af1181b35f2b11c4b1150d6cb16934c28093707fb97c911ff16b3fe609
       RUST_LOG: info
       STATE_DIR: /var/lib/cartesi-rollups-prt-node/state
       WEB3_PRIVATE_KEY: ${WEB3_PRIVATE_KEY}

@@ -73,14 +73,14 @@ Next we setup the necessary environmental variables using the below command:
 - Mainnet:
   
 ```shell
-fly secrets set --config mainnet.fly.toml WEB3_RPC_URL=<SEPOLIA OR MAINNET RPC OF CHOICE>
+fly secrets set --config mainnet.fly.toml WEB3_RPC_URL=<MAINNET RPC OF CHOICE>
 fly secrets set --config mainnet.fly.toml WEB3_PRIVATE_KEY=<PRIVATE_KEY>
 ```
 
 - Sepolia:
   
 ```shell
-fly secrets set --config sepolia.fly.toml WEB3_RPC_URL=<SEPOLIA OR MAINNET RPC OF CHOICE>
+fly secrets set --config sepolia.fly.toml WEB3_RPC_URL=<SEPOLIA RPC OF CHOICE>
 fly secrets set --config sepolia.fly.toml WEB3_PRIVATE_KEY=<PRIVATE_KEY>
 ```
 
