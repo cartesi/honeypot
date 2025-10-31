@@ -7,7 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ################################
 # base
-FROM --platform=linux/riscv64 docker.io/library/ubuntu:${UBUNTU_TAG}@${UBUNTU_DIGEST} as base
+FROM --platform=linux/riscv64 docker.io/library/ubuntu:${UBUNTU_TAG}@${UBUNTU_DIGEST} AS base
 
 ARG APT_UPDATE_SNAPSHOT
 ARG DEBIAN_FRONTEND
@@ -31,8 +31,8 @@ RUN dpkg -i /tmp/machine-guest-tools_riscv64.deb && \
     rm /tmp/machine-guest-tools_riscv64.deb
 
 ################################
-# honeypot builder
-FROM base AS builder
+# dapp builder
+FROM base AS dapp-builder
 
 # Install build essential
 ARG DEBIAN_FRONTEND
@@ -50,11 +50,44 @@ RUN make HONEYPOT_CONFIG=${HONEYPOT_CONFIG} CXX=g++-14
 
 ################################
 # rootfs builder
-FROM base
+FROM base AS rootfs-builder
 
-# Strip non-determinism
-RUN rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
+# Create a distroless rootfs with only the necessary files
+WORKDIR /rootfs
+RUN <<EOF
+set -eu
+
+# Create filesystem tree
+mkdir -p dev etc home mnt proc run sys tmp var usr/bin usr/sbin usr/lib bin.usr-is-merged
+ln -s usr/bin usr/sbin usr/lib .
+ln -s /run var/run
+
+# Install system libraries
+mkdir -p usr/lib/riscv64-linux-gnu
+cp -a /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /usr/lib/riscv64-linux-gnu/libc.so.6 usr/lib/riscv64-linux-gnu/
+ln -s riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 usr/lib/
+
+# Install busybox
+cp -a /usr/bin/busybox usr/bin/
+/usr/bin/busybox --list-long | grep -v -e busybox -e linuxrc -e init | xargs -I{} ln -s /bin/busybox {}
+
+# Install init system
+cp -a /usr/sbin/cartesi-init /usr/sbin/xhalt usr/sbin/
+
+# Create essential users
+ln -s /bin/busybox /usr/bin/ash
+mkdir /empty-skel
+groupadd --prefix=/rootfs --gid 0 --system root
+useradd --prefix=/rootfs --create-home --shell=/usr/bin/ash --uid 0 --gid 0 --home-dir /root --skel=/empty-skel --no-log-init --system root
+useradd --prefix=/rootfs --create-home --shell=/usr/bin/ash --uid 1000 --user-group --home-dir /home/dapp --skel=/empty-skel --no-log-init dapp
+EOF
+
+# Install dapp
+COPY --from=dapp-builder /home/dapp/honeypot home/dapp/
+
+################################
+# rootfs
+FROM scratch
 
 # Install honeypot
-WORKDIR /home/dapp
-COPY --from=builder /home/dapp/honeypot .
+COPY --from=rootfs-builder /rootfs /

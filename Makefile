@@ -22,7 +22,7 @@ CXXFLAGS += \
 LIBS = -l:libcmt.a
 
 # Linker flags to make binary deterministic
-LDFLAGS += -Wl,--build-id=none
+LDFLAGS += -Wl,--build-id=none -s -static-libgcc -static-libstdc++
 
 # Linux image
 LINUX_KERNEL_VER = 6.5.13-ctsi-1
@@ -34,7 +34,7 @@ MACHINE_ENTRYPOINT = exec /home/dapp/honeypot
 
 # Machine initial kernel and flash drives
 MACHINE_FLAGS = \
-	--ram-length=48Mi \
+	--ram-length=32Mi \
 	--ram-image=linux.bin \
 	--append-bootargs=ro \
 	--flash-drive=label:root,filename:rootfs.ext2 \
