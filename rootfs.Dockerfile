@@ -62,14 +62,17 @@ mkdir -p dev etc home mnt proc run sys tmp var usr/bin usr/sbin usr/lib bin.usr-
 ln -s usr/bin usr/sbin usr/lib .
 ln -s /run var/run
 
-# Install system libraries
-mkdir -p usr/lib/riscv64-linux-gnu
+# Install libc
+mkdir -p usr/lib/riscv64-linux-gnu usr/share/doc/libc6
 cp -a /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /usr/lib/riscv64-linux-gnu/libc.so.6 usr/lib/riscv64-linux-gnu/
 ln -s riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 usr/lib/
+cp /usr/share/doc/libc6/copyright usr/share/doc/libc6/
 
 # Install busybox
 cp -a /usr/bin/busybox usr/bin/
 /usr/bin/busybox --list-long | grep -v -e busybox -e linuxrc -e init | xargs -I{} ln -s /bin/busybox {}
+mkdir -p usr/share/doc/busybox-static
+cp /usr/share/doc/busybox-static/copyright usr/share/doc/busybox-static/
 
 # Install init system
 cp -a /usr/sbin/cartesi-init /usr/sbin/xhalt usr/sbin/
@@ -82,12 +85,12 @@ useradd --prefix=/rootfs --create-home --shell=/usr/bin/ash --uid 0 --gid 0 --ho
 useradd --prefix=/rootfs --create-home --shell=/usr/bin/ash --uid 1000 --user-group --home-dir /home/dapp --skel=/empty-skel --no-log-init dapp
 EOF
 
-# Install dapp
-COPY --from=dapp-builder /home/dapp/honeypot home/dapp/
-
 ################################
 # rootfs
 FROM scratch
 
-# Install honeypot
+# Copy rootfs base tree
 COPY --from=rootfs-builder /rootfs /
+
+# Copy dapp
+COPY --from=dapp-builder /home/dapp/honeypot /home/dapp/
