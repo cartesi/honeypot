@@ -2,9 +2,9 @@
 
 ###
 # Build arguments
-ARG CARTESI_ROLLUPS_PRT_NODE_VERSION=2.0.0
-ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_AMD64=4ddc4a18f46894b43f9a6c7283190133ba6ccfdd856b12cbf470a793bf68a08e
-ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_ARM64=3801b8a33de5cbcf55d10fa67eb18379c88cdc7c0140f2c845b14d2741c095d3
+ARG CARTESI_ROLLUPS_PRT_NODE_VERSION=2.0.3
+ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_AMD64=0171e5aa872ec798b5b0a38634784e2567eeac847577685e76f7879254137ba6
+ARG CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_ARM64=c7bec0dbd0d019e16a1b7a6236e72d3f182982337893b30d981c2be5b5ed0c35
 
 # baseimage args
 ARG DEBIAN_TAG=trixie-20260202-slim
@@ -31,10 +31,10 @@ RUN <<EOF
 set -euo pipefail
 
 case "${TARGETARCH}" in
-    amd64) curl -fsSL https://github.com/cartesi/dave/releases/download/v${CARTESI_ROLLUPS_PRT_NODE_VERSION}/cartesi-rollups-prt-node-Linux-gnu-x86_64.tar.gz \
+    amd64) curl -fsSL https://github.com/cartesi/dave/releases/download/v${CARTESI_ROLLUPS_PRT_NODE_VERSION}/cartesi-rollups-prt-${CARTESI_ROLLUPS_PRT_NODE_VERSION}-node-${TARGETARCH}.tar.gz \
             -o /tmp/cartesi-rollups-prt-node.tar.gz; \
         echo "${CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_AMD64}  /tmp/cartesi-rollups-prt-node.tar.gz" | sha256sum -c ;;
-    arm64) curl -fsSL https://github.com/cartesi/dave/releases/download/v${CARTESI_ROLLUPS_PRT_NODE_VERSION}/cartesi-rollups-prt-node-Linux-gnu-${TARGETARCH}.tar.gz \
+    arm64) curl -fsSL https://github.com/cartesi/dave/releases/download/v${CARTESI_ROLLUPS_PRT_NODE_VERSION}/cartesi-rollups-prt-${CARTESI_ROLLUPS_PRT_NODE_VERSION}-node-${TARGETARCH}.tar.gz \
             -o /tmp/cartesi-rollups-prt-node.tar.gz; \
         echo "${CARTESI_ROLLUPS_PRT_NODE_CHECKSUM_ARM64}  /tmp/cartesi-rollups-prt-node.tar.gz" | sha256sum -c ;;
     *) echo "unsupported architecture: ${TARGETARCH}"; exit 1 ;;
