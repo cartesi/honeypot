@@ -16,9 +16,7 @@ set -eu
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates
 apt-get update --snapshot=${APT_UPDATE_SNAPSHOT}
-apt-get install -y --no-install-recommends busybox-static
-apt-get remove -y --purge ca-certificates
-apt-get autoremove -y --purge
+apt-get install --snapshot=${APT_UPDATE_SNAPSHOT} -y --no-install-recommends busybox-static
 EOF
 
 # Install guest tools
@@ -36,7 +34,7 @@ FROM base AS dapp-builder
 
 # Install build essential
 ARG DEBIAN_FRONTEND
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get install --snapshot=${APT_UPDATE_SNAPSHOT} -y --no-install-recommends \
     make g++-14
 
 # Compile
