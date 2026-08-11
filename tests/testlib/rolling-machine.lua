@@ -15,13 +15,13 @@ function machine_methods:run_until_yield_or_halt()
                 outputs_hash
         elseif break_reason == cartesi.BREAK_REASON_YIELDED_AUTOMATICALLY then
             local _, yield_reason, data = self:receive_cmio_request()
-            if yield_reason == cartesi.CMIO_YIELD_AUTOMATIC_REASON_TX_OUTPUT then
+            if yield_reason == cartesi.HTIF_YIELD_AUTOMATIC_REASON_TX_OUTPUT then
                 outputs = outputs or {}
                 table.insert(outputs, data)
-            elseif yield_reason == cartesi.CMIO_YIELD_AUTOMATIC_REASON_TX_REPORT then
+            elseif yield_reason == cartesi.HTIF_YIELD_AUTOMATIC_REASON_TX_REPORT then
                 reports = reports or {}
                 table.insert(reports, data)
-            elseif yield_reason == cartesi.CMIO_YIELD_AUTOMATIC_REASON_PROGRESS then
+            elseif yield_reason == cartesi.HTIF_YIELD_AUTOMATIC_REASON_PROGRESS then
                 progresses = progresses or {}
                 table.insert(progresses, data)
             else
@@ -35,15 +35,16 @@ end
 
 function machine_methods:advance_state(input)
     local forked <close> = self:fork_server():set_cleanup_call(jsonrpc.SHUTDOWN)
-    self:send_cmio_response(cartesi.CMIO_YIELD_REASON_ADVANCE_STATE, input or "")
+    local revert_root_hash = self:get_root_hash()
+    self:send_cmio_response(cartesi.HTIF_YIELD_REASON_ADVANCE_STATE, input or "", revert_root_hash)
     local res = self:run_until_yield_or_halt()
-    if res.yield_reason ~= cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED then self:swap(forked) end
+    if res.yield_reason ~= cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED then self:swap(forked) end
     return res
 end
 
 function machine_methods:inspect_state(query)
     local forked <close> = self:fork_server():set_cleanup_call(jsonrpc.SHUTDOWN)
-    forked:send_cmio_response(cartesi.CMIO_YIELD_REASON_INSPECT_STATE, query or "")
+    forked:send_cmio_response(cartesi.HTIF_YIELD_REASON_INSPECT_STATE, query or "")
     return forked:run_until_yield_or_halt()
 end
 
