@@ -25,9 +25,9 @@ LIBS = -l:libcmt.a
 LDFLAGS += -Wl,--build-id=none -s -static-libgcc -static-libstdc++
 
 # Linux image
-LINUX_KERNEL_VER = 6.5.13-ctsi-1
-LINUX_IMAGE_VER = 0.20.0
-LINUX_IMAGE_SHA256SUM = 65dd100ff6204346ac2f50f772721358b5c1451450ceb39a154542ee27b4c947
+LINUX_KERNEL_VER = 6.5.13-ctsi-2
+LINUX_IMAGE_VER = 0.21.0
+LINUX_IMAGE_SHA256SUM = 5c900060da2db2bfa84cd39cd9cd722988c83c42225f3cac55f2d3157e48f32f
 
 # Machine entrypoint
 MACHINE_ENTRYPOINT = exec /home/dapp/honeypot
@@ -37,8 +37,8 @@ MACHINE_FLAGS = \
 	--ram-length=32Mi \
 	--ram-image=linux.bin \
 	--append-bootargs=ro \
-	--flash-drive=label:root,filename:rootfs.ext2 \
-	--flash-drive=label:state,length:4096,user:dapp
+	--flash-drive=label:root,data_filename:rootfs.ext2 \
+	--flash-drive=label:state,length:4096,user:dapp,mke2fs:false,mount:false
 
 HONEYPOT_CONFIG = localhost
 

@@ -112,10 +112,10 @@ bool rollup_process_next_request(cmt_rollup_t *rollup, STATE *state, ADVANCE_STA
     }
     // Handle request
     switch (finish.next_request_type) {
-        case HTIF_YIELD_REASON_ADVANCE: { // Advance state.
+        case HTIF_YIELD_REASON_ADVANCE_STATE: { // Advance state.
             return advance_state(rollup, state);
         }
-        case HTIF_YIELD_REASON_INSPECT: { // Inspect state.
+        case HTIF_YIELD_REASON_INSPECT_STATE: { // Inspect state.
             // Call inspect state handler.
             return inspect_state(rollup, state);
         }

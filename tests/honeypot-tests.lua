@@ -23,7 +23,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { consts.ADVANCE_STATUS_SUCCESS },
         }
         expect.equal(res, expected_res)
@@ -40,7 +40,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { consts.ADVANCE_STATUS_SUCCESS },
         }
         expect.equal(res, expected_res)
@@ -57,7 +57,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { consts.ADVANCE_STATUS_SUCCESS },
         }
         expect.equal(res, expected_res)
@@ -74,7 +74,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_DEPOSIT_INVALID_TOKEN },
         }
         expect.equal(res, expected_res)
@@ -91,7 +91,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -109,7 +109,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -119,7 +119,7 @@ describe("honeypot basic", function()
         local res = machine:inspect_state()
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { encoder.encode_be256(3) },
         }
         expect.equal(res, expected_res)
@@ -129,7 +129,7 @@ describe("honeypot basic", function()
         local res = machine:inspect_state("SOME RANDOM DATA")
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { encoder.encode_be256(3) },
         }
         expect.equal(res, expected_res)
@@ -142,7 +142,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -154,7 +154,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             outputs = {
                 encoder.encode_voucher_output({
                     address = consts.ERC20_TOKEN_ADDRESS,
@@ -176,7 +176,7 @@ describe("honeypot basic", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_WITHDRAW_NO_FUNDS },
         }
         expect.equal(res, expected_res)
@@ -186,7 +186,7 @@ describe("honeypot basic", function()
         local res = machine:inspect_state()
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { encoder.encode_be256(0) },
         }
         expect.equal(res, expected_res)
@@ -203,7 +203,7 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -217,7 +217,7 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -236,7 +236,7 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { consts.ADVANCE_STATUS_SUCCESS },
         }
         expect.equal(res, expected_res)
@@ -251,7 +251,7 @@ describe("honeypot edge", function()
         }))
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_DEPOSIT_BALANCE_OVERFLOW },
         }
         expect.equal(res, expected_res)
@@ -269,7 +269,7 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -287,7 +287,7 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -305,7 +305,7 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -323,7 +323,7 @@ describe("honeypot edge", function()
         }))
         local expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
         expect.equal(res, expected_res)
@@ -343,7 +343,7 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+                yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
@@ -364,7 +364,7 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+                yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
@@ -377,7 +377,7 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+                yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
@@ -390,10 +390,12 @@ describe("honeypot edge", function()
             }))
             local expected_res = {
                 break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-                yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+                yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
                 reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
             }
             expect.equal(res, expected_res)
         end
     end)
 end)
+
+lester.exit()

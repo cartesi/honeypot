@@ -1,8 +1,8 @@
 ARG UBUNTU_TAG=noble-20251001
 ARG UBUNTU_DIGEST=sha256:66460d557b25769b102175144d538d88219c077c678a49af4afca6fbfc1b5252
 ARG APT_UPDATE_SNAPSHOT=20251022T030400Z
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2
-ARG MACHINE_GUEST_TOOLS_SHA256SUM=c077573dbcf0cdc146adf14b480bfe454ca63aa4d3e8408c5487f550a5b77a41
+ARG MACHINE_GUEST_TOOLS_VERSION=0.18.0
+ARG MACHINE_GUEST_TOOLS_SHA256SUM=204d4260defd68e11b957ae1f1b511b6c2c74345c918748be06f592733b72dcd
 ARG DEBIAN_FRONTEND=noninteractive
 
 ################################
@@ -72,8 +72,9 @@ cp -a /usr/bin/busybox usr/bin/
 mkdir -p usr/share/doc/busybox-static
 cp /usr/share/doc/busybox-static/copyright usr/share/doc/busybox-static/
 
-# Install init system
+# Install init system and memory-range lookup tools
 cp -a /usr/sbin/cartesi-init /usr/sbin/xhalt usr/sbin/
+cp -a /usr/bin/memoryrange /usr/bin/flashdrive /usr/bin/nvram usr/bin/
 
 # Create essential users
 ln -s /bin/busybox /usr/bin/ash

@@ -8,7 +8,7 @@ local describe, it, expect = lester.describe, lester.it, lester.expect
 
 local MACHINE_STORED_DIR = "../snapshot"
 local MACHINE_RUNTIME_CONFIG = {
-    htif = { no_console_putchar = true },
+    console = { output_destination = "to_null" },
     skip_root_hash_check = true,
 }
 
@@ -56,19 +56,19 @@ local function random_withdraw_request(machine, balance)
     if #extra_data ~= 0 then -- Invalid message
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
     elseif bint256.eq(balance, 0) then -- No funds
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_WITHDRAW_NO_FUNDS },
         }
     else -- Success
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             outputs = {
                 encoder.encode_voucher_output({
                     address = consts.ERC20_TOKEN_ADDRESS_ENCODED,
@@ -106,30 +106,30 @@ local function random_deposit_request(machine, balance)
     if #extra_data ~= 0 then -- Invalid message
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_INVALID_REQUEST },
         }
     elseif not valid_contract then -- Invalid token address
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_DEPOSIT_INVALID_TOKEN },
         }
     elseif overflow then -- Balance overflow
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED,
             reports = { consts.ADVANCE_STATUS_DEPOSIT_BALANCE_OVERFLOW },
         }
     else -- Success
         expected_res = {
             break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-            yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+            yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
             reports = { consts.ADVANCE_STATUS_SUCCESS },
         }
         balance = balance + amount
     end
-    if expected_res.yield_reason == cartesi.CMIO_YIELD_MANUAL_REASON_RX_REJECTED then return balance end
+    if expected_res.yield_reason == cartesi.HTIF_YIELD_MANUAL_REASON_RX_REJECTED then return balance end
     -- Make the advance request
     local res = machine:advance_state(encoder.encode_advance_input({
         msg_sender = consts.ERC20_PORTAL_ADDRESS_ENCODED,
@@ -159,7 +159,7 @@ end
 local function inspect_balance_check(machine, balance)
     local expected_res = {
         break_reason = cartesi.BREAK_REASON_YIELDED_MANUALLY,
-        yield_reason = cartesi.CMIO_YIELD_MANUAL_REASON_RX_ACCEPTED,
+        yield_reason = cartesi.HTIF_YIELD_MANUAL_REASON_RX_ACCEPTED,
         reports = { balance:tobe() },
     }
     local res = machine:inspect_state(random_string(CHANCE_EXTRA_DATA, 32))
@@ -199,3 +199,5 @@ perform_tests(1000)
 
 print("Running tests for 10000 requests, this should take a few minutes...")
 perform_tests(10000)
+
+lester.exit()

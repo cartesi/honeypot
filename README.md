@@ -56,7 +56,7 @@ The application is designed to be secure with the following features:
 - Docker
 - GNU Make
 - Lua 5.4
-- [cartesi/machine-emulator](https://github.com/cartesi/machine-emulator) 0.19.x
+- [cartesi/machine-emulator](https://github.com/cartesi/machine-emulator) 0.21.x
 - [cartesi/xgenext2fs](https://github.com/cartesi/genext2fs)
 
 ### Building the Application
